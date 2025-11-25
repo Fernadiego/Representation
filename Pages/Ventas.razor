@@ -1,0 +1,288 @@
+@page "/ventas"
+@inject CommerceService Commerce
+@inject TenantState TenantState
+@implements IDisposable
+
+<PageTitle>Ventas</PageTitle>
+
+<h1 class="mb-4">Ventas</h1>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-5 col-xl-3">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">Registrar venta</h5>
+            </div>
+            <div class="card-body">
+                @if (!CanCreateSale)
+                {
+                    <div class="alert alert-warning">Selecciona una empresa con clientes, vendedores y productos para registrar ventas.</div>
+                }
+
+                <EditForm Model="_saleDraft" OnValidSubmit="SaveSale">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label class="form-label">Fecha</label>
+                        <InputDate class="form-control" @bind-Value="_saleDraft.Date" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cliente</label>
+                        <InputSelect class="form-select" @bind-Value="_saleDraft.CustomerId">
+                            @foreach (var customer in _customers)
+                            {
+                                <option value="@customer.Id">@customer.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Vendedor</label>
+                        <InputSelect class="form-select" @bind-Value="_saleDraft.VendorId">
+                            @foreach (var vendor in _vendors)
+                            {
+                                <option value="@vendor.Id">@vendor.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Detalle</label>
+                        @foreach (var line in _saleDraft.Lines)
+                        {
+                            <div class="row g-2 align-items-end mb-2">
+                                <div class="col-6">
+                                    <label class="form-label small text-muted">Producto</label>
+                                    <InputSelect class="form-select" @bind-Value="line.ProductId" @onchange="e => OnProductChanged(e, line)">
+                                        @foreach (var product in _products)
+                                        {
+                                            <option value="@product.Id">@product.Name</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                                <div class="col-3">
+                                    <label class="form-label small text-muted">Cantidad</label>
+                                    <InputNumber class="form-control" @bind-Value="line.Quantity" />
+                                </div>
+                                <div class="col-3">
+                                    <label class="form-label small text-muted">Precio</label>
+                                    <InputNumber class="form-control" @bind-Value="line.UnitPrice" />
+                                </div>
+                                <div class="col-12 text-end">
+                                    <small class="text-muted">Subtotal: @line.LineTotal.ToString("C")</small>
+                                    @if (_saleDraft.Lines.Count > 1)
+                                    {
+                                        <button type="button" class="btn btn-link text-danger btn-sm" @onclick="() => RemoveLine(line)">Quitar</button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="AddLine">Agregar producto</button>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <strong>Total</strong>
+                            <strong>@_saleDraft.Lines.Sum(l => l.LineTotal).ToString("C")</strong>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(_error))
+                    {
+                        <div class="alert alert-danger">@_error</div>
+                    }
+
+                    <button type="submit" class="btn btn-primary w-100" disabled="@(!CanCreateSale)">Registrar venta</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-7 col-xl-9">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Historial</h5>
+                <span class="badge text-bg-secondary">@_sales.Count ventas</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Folio</th>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Total</th>
+                            <th>Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!_sales.Any())
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">Sin ventas registradas</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var sale in _sales.OrderByDescending(s => s.Date))
+                            {
+                                <tr>
+                                    <td>#@sale.Id</td>
+                                    <td>@sale.Date.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        <div>@sale.Customer?.Name</div>
+                                        <small class="text-muted">@sale.Vendor?.Name</small>
+                                    </td>
+                                    <td>@sale.Total.ToString("C")</td>
+                                    <td>
+                                        <ul class="small mb-0">
+                                            @foreach (var line in sale.Lines)
+                                            {
+                                                <li>@line.Product?.Name - @line.Quantity x @line.UnitPrice.ToString("C")</li>
+                                            }
+                                        </ul>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Sale> _sales = new();
+    private List<Customer> _customers = new();
+    private List<Vendor> _vendors = new();
+    private List<Product> _products = new();
+    private Sale _saleDraft = new();
+    private string? _error;
+
+    private bool CanCreateSale => TenantState.CurrentCompanyId is not null && _customers.Any() && _vendors.Any() && _products.Any();
+
+    protected override async Task OnInitializedAsync()
+    {
+        TenantState.OnTenantChanged += HandleTenantChanged;
+        await LoadData(resetSale: true);
+    }
+
+    public void Dispose()
+    {
+        TenantState.OnTenantChanged -= HandleTenantChanged;
+    }
+
+    private async Task LoadData(bool resetSale = false)
+    {
+        var companyId = TenantState.CurrentCompanyId;
+        if (companyId is null)
+        {
+            _sales.Clear();
+            _customers.Clear();
+            _vendors.Clear();
+            _products.Clear();
+            if (resetSale)
+            {
+                ResetSale();
+            }
+            return;
+        }
+
+        var id = companyId.Value;
+        _sales = await Commerce.GetSalesAsync(id);
+        _customers = await Commerce.GetCustomersAsync(id);
+        _vendors = await Commerce.GetVendorsAsync(id);
+        _products = await Commerce.GetProductsAsync(id);
+
+        if (resetSale)
+        {
+            ResetSale();
+        }
+    }
+
+    private void ResetSale()
+    {
+        var defaultProduct = _products.FirstOrDefault();
+        _saleDraft = new Sale
+        {
+            CompanyId = TenantState.CurrentCompanyId ?? 0,
+            Date = DateTime.Today,
+            CustomerId = _customers.FirstOrDefault()?.Id ?? 0,
+            VendorId = _vendors.FirstOrDefault()?.Id ?? 0,
+        };
+
+        _saleDraft.Lines.Clear();
+        _saleDraft.Lines.Add(new SaleLine
+        {
+            ProductId = defaultProduct?.Id ?? 0,
+            Quantity = 1,
+            UnitPrice = defaultProduct?.UnitPrice ?? 0
+        });
+
+        _error = null;
+    }
+
+    private void AddLine()
+    {
+        var defaultProduct = _products.FirstOrDefault();
+        _saleDraft.Lines.Add(new SaleLine
+        {
+            ProductId = defaultProduct?.Id ?? 0,
+            Quantity = 1,
+            UnitPrice = defaultProduct?.UnitPrice ?? 0
+        });
+    }
+
+    private void RemoveLine(SaleLine line)
+    {
+        if (_saleDraft.Lines.Count <= 1)
+        {
+            return;
+        }
+
+        _saleDraft.Lines.Remove(line);
+    }
+
+    private void OnProductChanged(ChangeEventArgs e, SaleLine line)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var productId))
+        {
+            line.ProductId = productId;
+            var product = _products.FirstOrDefault(p => p.Id == productId);
+            if (product is not null)
+            {
+                line.UnitPrice = product.UnitPrice;
+            }
+        }
+    }
+
+    private async Task SaveSale()
+    {
+        if (TenantState.CurrentCompanyId is not int companyId)
+        {
+            _error = "Selecciona una empresa para registrar ventas.";
+            return;
+        }
+
+        try
+        {
+            _error = null;
+            await Commerce.CreateSaleAsync(companyId, _saleDraft);
+            await LoadData(resetSale: true);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async void HandleTenantChanged(Company _)
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadData(resetSale: true);
+            StateHasChanged();
+        });
+    }
+}
+

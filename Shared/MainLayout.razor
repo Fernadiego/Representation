@@ -1,0 +1,124 @@
+﻿@inherits LayoutComponentBase
+@inject CommerceService Commerce
+@inject TenantState TenantState
+
+<PageTitle>BlazorVentas</PageTitle>
+
+<div class="page @(_sidebarCollapsed ? "sidebar-collapsed" : string.Empty)">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleSidebar">
+                    <span class="oi @( _sidebarCollapsed ? "oi-chevron-right" : "oi-chevron-left")" aria-hidden="true"></span>
+                    <span class="ms-1">@(_sidebarCollapsed ? "Mostrar menú" : "Ocultar menú")</span>
+                </button>
+                <span class="fw-semibold text-muted">BlazorVentas</span>
+            </div>
+            <div class="tenant-selector d-flex align-items-center gap-2">
+                <span class="tenant-label">Empresa</span>
+                <div class="tenant-input flex-grow-1">
+                    <input class="form-control form-control-sm"
+                           placeholder="Buscar empresa..."
+                           value="@_companySearch"
+                           @oninput="OnCompanyInput"
+                           @onkeydown="HandleCompanyKeyDown" />
+                    @if (_showSuggestions)
+                    {
+                        <ul class="list-group tenant-suggestions">
+                            @foreach (var company in _filteredCompanies)
+                            {
+                                <li class="list-group-item list-group-item-action"
+                                    role="button"
+                                    @onclick="() => SelectCompany(company)">
+                                    @company.Name
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    private bool _sidebarCollapsed;
+    private string _companySearch = string.Empty;
+    private List<Company> _companies = new();
+    private List<Company> _filteredCompanies = new();
+    private bool _showSuggestions;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _companies = await Commerce.GetCompaniesAsync();
+        if (_companies.Any())
+        {
+            var selected = TenantState.CurrentCompany ?? _companies.First();
+            TenantState.SetCompany(selected);
+            _companySearch = selected.Name;
+        }
+
+        UpdateSuggestions();
+    }
+
+    private void ToggleSidebar()
+    {
+        _sidebarCollapsed = !_sidebarCollapsed;
+    }
+
+    private void OnCompanyInput(ChangeEventArgs e)
+    {
+        _companySearch = e.Value?.ToString() ?? string.Empty;
+        UpdateSuggestions();
+    }
+
+    private void HandleCompanyKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key != "Enter")
+        {
+            return;
+        }
+
+        var exactMatch = _companies.FirstOrDefault(c => c.Name.Equals(_companySearch, StringComparison.OrdinalIgnoreCase));
+        var company = exactMatch ?? _filteredCompanies.FirstOrDefault();
+        if (company is not null)
+        {
+            SelectCompany(company);
+        }
+    }
+
+    private void SelectCompany(Company company)
+    {
+        _companySearch = company.Name;
+        _showSuggestions = false;
+        TenantState.SetCompany(company);
+        UpdateSuggestions();
+    }
+
+    private void UpdateSuggestions()
+    {
+        var term = _companySearch?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(term))
+        {
+            _filteredCompanies = _companies.Take(5).ToList();
+        }
+        else
+        {
+            _filteredCompanies = _companies
+                .Where(c => c.Name.Contains(term, StringComparison.OrdinalIgnoreCase))
+                .Take(5)
+                .ToList();
+        }
+
+        _showSuggestions = !string.IsNullOrWhiteSpace(term) && _filteredCompanies.Any() &&
+            !_filteredCompanies.Any(c => c.Name.Equals(term, StringComparison.OrdinalIgnoreCase));
+    }
+}

@@ -1,0 +1,155 @@
+﻿@page "/"
+@inject CommerceService Commerce
+@inject TenantState TenantState
+@implements IDisposable
+
+<PageTitle>Panel</PageTitle>
+
+<h1 class="mb-4">Panel de ventas</h1>
+
+@if (_loading)
+{
+    <p>Cargando información...</p>
+}
+else if (_snapshot is null)
+{
+    <div class="alert alert-info">Selecciona una empresa para visualizar sus indicadores.</div>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted text-uppercase">Valor inventario</small>
+                    <h3 class="mt-2">@_snapshot?.InventoryValue.ToString("C")</h3>
+                    <span class="text-success fw-semibold">Productos activos</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted text-uppercase">Ventas del mes</small>
+                    <h3 class="mt-2">@_snapshot?.MonthlySales.ToString("C")</h3>
+                    <span class="text-primary fw-semibold">Seguimiento mensual</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted text-uppercase">Promedio ticket</small>
+                    <h3 class="mt-2">@_snapshot?.AverageTicket.ToString("C")</h3>
+                    <span class="text-secondary fw-semibold">@_snapshot?.ActiveVendors vendedores</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted text-uppercase">Clientes activos</small>
+                    <h3 class="mt-2">@_snapshot?.CustomerCount</h3>
+                    <span class="text-info fw-semibold">Con historial de compras</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Últimas ventas</h5>
+            <a class="btn btn-sm btn-outline-primary" href="ventas">Ir a ventas</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Folio</th>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Vendedor</th>
+                        <th>Total</th>
+                        <th>Detalles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!_sales.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Sin ventas registradas</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var sale in _sales)
+                        {
+                            <tr>
+                                <td>#@sale.Id</td>
+                                <td>@sale.Date.ToString("dd MMM")</td>
+                                <td>@sale.Customer?.Name</td>
+                                <td>@sale.Vendor?.Name</td>
+                                <td>@sale.Total.ToString("C")</td>
+                                <td>
+                                    <ul class="small mb-0">
+                                        @foreach (var line in sale.Lines)
+                                        {
+                                            <li>@line.Product?.Name - @line.Quantity x @line.UnitPrice.ToString("C")</li>
+                                        }
+                                    </ul>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private CommerceSnapshot? _snapshot;
+    private List<Sale> _sales = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        TenantState.OnTenantChanged += HandleTenantChanged;
+        await LoadDashboardAsync();
+    }
+
+    public void Dispose()
+    {
+        TenantState.OnTenantChanged -= HandleTenantChanged;
+    }
+
+    private async Task LoadDashboardAsync()
+    {
+        _loading = true;
+        var companyId = TenantState.CurrentCompanyId;
+
+        if (companyId is null)
+        {
+            _snapshot = null;
+            _sales.Clear();
+            _loading = false;
+            return;
+        }
+
+        _snapshot = await Commerce.GetSnapshotAsync(companyId.Value);
+        _sales = (await Commerce.GetSalesAsync(companyId.Value))
+        .OrderByDescending(s => s.Date)
+        .Take(5)
+        .ToList();
+        _loading = false;
+    }
+
+    private async void HandleTenantChanged(Company _)
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadDashboardAsync();
+            StateHasChanged();
+        });
+    }
+}

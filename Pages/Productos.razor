@@ -1,0 +1,199 @@
+@page "/productos"
+@inject CommerceService Commerce
+@inject TenantState TenantState
+@implements IDisposable
+
+<PageTitle>Productos</PageTitle>
+
+<h1 class="mb-4">Catálogo de productos</h1>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">@(_editingProduct.Id == 0 ? "Nuevo producto" : $"Editar #{_editingProduct.Id}")</h5>
+            </div>
+            <div class="card-body">
+                <EditForm Model="_editingProduct" OnValidSubmit="SaveProduct">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <InputText class="form-control" @bind-Value="_editingProduct.Name" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">SKU</label>
+                        <InputText class="form-control" @bind-Value="_editingProduct.Sku" />
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">Precio</label>
+                            <InputNumber class="form-control" @bind-Value="_editingProduct.UnitPrice" />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Stock</label>
+                            <InputNumber class="form-control" @bind-Value="_editingProduct.Stock" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Proveedor</label>
+                        <InputSelect class="form-select" @bind-Value="_editingProduct.SupplierId">
+                            <option value="0">Selecciona...</option>
+                            @foreach (var supplier in _suppliers)
+                            {
+                                <option value="@supplier.Id">@supplier.Name</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="ResetForm">Cancelar</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Inventario</h5>
+                <span class="badge text-bg-secondary">@_products.Count() registros</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>SKU</th>
+                            <th>Proveedor</th>
+                            <th class="text-end">Precio</th>
+                            <th class="text-end">Stock</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!_products.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">Sin productos</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var product in _products)
+                            {
+                                <tr>
+                                    <td>@product.Name</td>
+                                    <td><span class="badge text-bg-light">@product.Sku</span></td>
+                                    <td>@product.Supplier?.Name</td>
+                                    <td class="text-end">@product.UnitPrice.ToString("C")</td>
+                                    <td class="text-end">@product.Stock</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-link" @onclick="() => EditProduct(product)">Editar</button>
+                                        <button class="btn btn-sm btn-link text-danger" @onclick="() => DeleteProduct(product.Id)">Eliminar</button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Product> _products = new();
+    private List<Supplier> _suppliers = new();
+    private Product _editingProduct = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        TenantState.OnTenantChanged += HandleTenantChanged;
+        await LoadData(resetForm: true);
+    }
+
+    public void Dispose()
+    {
+        TenantState.OnTenantChanged -= HandleTenantChanged;
+    }
+
+    private async Task LoadData(bool resetForm = false)
+    {
+        var companyId = TenantState.CurrentCompanyId;
+        if (companyId is null)
+        {
+            _products.Clear();
+            _suppliers.Clear();
+            if (resetForm)
+            {
+                ResetForm();
+            }
+            return;
+        }
+
+        _products = await Commerce.GetProductsAsync(companyId.Value);
+        _suppliers = await Commerce.GetSuppliersAsync(companyId.Value);
+
+        if (resetForm)
+        {
+            ResetForm();
+        }
+    }
+
+    private void ResetForm()
+    {
+        _editingProduct = new Product
+        {
+            CompanyId = TenantState.CurrentCompanyId ?? 0,
+            SupplierId = _suppliers.FirstOrDefault()?.Id ?? 0
+        };
+    }
+
+    private void EditProduct(Product product)
+    {
+        _editingProduct = new Product
+        {
+            Id = product.Id,
+            CompanyId = product.CompanyId,
+            Name = product.Name,
+            Sku = product.Sku,
+            UnitPrice = product.UnitPrice,
+            Stock = product.Stock,
+            SupplierId = product.SupplierId
+        };
+    }
+
+    private async Task SaveProduct()
+    {
+        if (TenantState.CurrentCompanyId is not int companyId)
+        {
+            return;
+        }
+
+        await Commerce.SaveProductAsync(companyId, _editingProduct);
+        await LoadData(resetForm: true);
+    }
+
+    private async Task DeleteProduct(int id)
+    {
+        if (TenantState.CurrentCompanyId is not int companyId)
+        {
+            return;
+        }
+
+        await Commerce.DeleteProductAsync(companyId, id);
+        await LoadData(resetForm: true);
+    }
+
+    private async void HandleTenantChanged(Company _)
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadData(resetForm: true);
+            StateHasChanged();
+        });
+    }
+}
+
