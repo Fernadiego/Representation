@@ -1,151 +1,874 @@
 @page "/ventas"
+@using Microsoft.AspNetCore.Components.Web
 @inject CommerceService Commerce
 @inject TenantState TenantState
+@inject IJSRuntime JSRuntime
+@inject BlazorVentas.Services.ImageService ImageService
 @implements IDisposable
 
 <PageTitle>Ventas</PageTitle>
 
-<h1 class="mb-4">Ventas</h1>
+<style>
+    .ventas-container h5, .ventas-container h6 {
+        font-size: 0.875rem;
+    }
+    .ventas-container th {
+        font-size: 0.8125rem;
+    }
+    .ventas-container .form-control, .ventas-container .form-select {
+        font-size: 0.8125rem;
+    }
+    .ventas-container table tbody tr {
+        height: 40px !important;
+    }
+    .ventas-container table tbody tr:nth-child(even) {
+        background-color: #f8f9fa !important;
+    }
+    .ventas-container table tbody tr:nth-child(odd) {
+        background-color: #ffffff !important;
+    }
+    .ventas-container table tbody tr:hover {
+        background-color: #e9ecef !important;
+    }
+    .ventas-container table tbody tr.table-active {
+        background-color: #cfe2ff !important;
+    }
+    .ventas-container table tbody td {
+        padding: 0.3rem 0.5rem !important;
+        vertical-align: middle !important;
+    }
+    .btn-registrar-venta {
+        background-color: #28a745 !important;
+        border-color: #28a745 !important;
+        color: white !important;
+    }
+    .btn-registrar-venta:hover:not(:disabled) {
+        background-color: #218838 !important;
+        border-color: #1e7e34 !important;
+        color: white !important;
+    }
+    .btn-registrar-venta:disabled {
+        background-color: #28a745 !important;
+        border-color: #28a745 !important;
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    .btn-registrar-venta:focus {
+        background-color: #28a745 !important;
+        border-color: #28a745 !important;
+        color: white !important;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+    /* Botones de Estado */
+    .btn-status {
+        padding: 6px 16px;
+        border-radius: 16px;
+        border: none;
+        color: white;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+    .btn-status-cargado {
+        background-color: #4caf50;
+    }
+    .btn-status-cargado:hover {
+        background-color: #45a049;
+    }
+    .btn-status-cargado.active {
+        background-color: #4caf50;
+        box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+    }
+    .btn-status-eliminada {
+        background-color: #f44336;
+    }
+    .btn-status-eliminada:hover {
+        background-color: #da190b;
+    }
+    .btn-status-eliminada.active {
+        background-color: #f44336;
+        box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
+    }
+    .btn-status-cancelada {
+        background-color: #2196f3;
+    }
+    .btn-status-cancelada:hover {
+        background-color: #0b7dda;
+    }
+    .btn-status-cancelada.active {
+        background-color: #2196f3;
+        box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+    }
+    /* Estilos para paginación segmentada */
+    .pagination-segmented {
+        display: flex;
+        border-radius: 0.375rem;
+        overflow: hidden;
+        border: 1px solid #dee2e6;
+        background-color: white;
+    }
+    .pagination-segment {
+        border: none;
+        border-left: 1px solid #dee2e6;
+        background-color: white;
+        color: #0d6efd;
+        padding: 0.375rem 0.75rem;
+        min-width: 48px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.875rem;
+    }
+    .pagination-segment:first-child {
+        border-left: none;
+    }
+    .pagination-segment:hover:not(.active) {
+        background-color: #f8f9fa;
+    }
+    .pagination-segment.active {
+        background-color: #0d6efd;
+        color: white;
+        font-weight: 600;
+        z-index: 1;
+    }
+    .pagination-segment:focus {
+        outline: none;
+        box-shadow: inset 0 0 0 2px rgba(13, 110, 253, 0.25);
+    }
+    
+    /* Material Design Autocomplete Styles */
+    .material-autocomplete-wrapper {
+        position: relative;
+        width: 100%;
+        margin-top: 16px;
+        padding-top: 8px;
+    }
+    
+    .material-autocomplete {
+        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        font-size: 0.8125rem !important;
+        width: 100% !important;
+        min-height: 40px;
+        height: 40px;
+        padding: 16px 32px 8px 12px !important;
+        background-color: transparent !important;
+        border: 1px solid rgba(0, 0, 0, 0.42) !important;
+        border-radius: 4px !important;
+        outline: none !important;
+        transition: border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        appearance: none !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgba(0,0,0,0.54)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 8px center !important;
+        background-size: 16px !important;
+        padding-right: 32px !important;
+        cursor: pointer !important;
+        color: rgba(0, 0, 0, 0.87) !important;
+    }
+    
+    /* When has value, reduce padding to match normal input */
+    .material-autocomplete-wrapper.has-value .material-autocomplete {
+        padding: 8px 32px 8px 12px !important;
+    }
+    
+    .material-autocomplete:hover {
+        border-color: rgba(0, 0, 0, 0.87) !important;
+    }
+    
+    .material-autocomplete:focus {
+        border-color: #1976d2 !important;
+        border-width: 2px !important;
+        box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2) !important;
+    }
+    
+    .material-autocomplete option {
+        padding: 10px 16px;
+        font-size: 0.6875rem;
+        background-color: white;
+        color: rgba(0, 0, 0, 0.87);
+        min-height: 44px;
+        line-height: 1.5;
+    }
+    
+    .material-autocomplete option:hover,
+    .material-autocomplete option:focus {
+        background-color: rgba(0, 0, 0, 0.04);
+    }
+    
+    .material-autocomplete option:checked {
+        background-color: rgba(25, 118, 210, 0.08);
+        color: rgba(0, 0, 0, 0.87);
+    }
+    
+    .material-autocomplete option:checked:hover,
+    .material-autocomplete option:checked:focus {
+        background-color: rgba(25, 118, 210, 0.12);
+    }
+    
+    /* Floating label effect - label inside field by default */
+    .material-autocomplete-wrapper label.form-label {
+        position: absolute;
+        left: 12px;
+        top: 12px;
+        font-size: 0.8125rem;
+        color: rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        background-color: white;
+        padding: 0 4px;
+        transform-origin: left top;
+        z-index: 1;
+    }
+    
+    .material-autocomplete-wrapper label.form-label.small {
+        font-size: 0.75rem;
+    }
+    
+    /* Label moves up when focused or has value */
+    .material-autocomplete:focus ~ label.form-label,
+    .material-autocomplete-wrapper.has-value label.form-label,
+    .material-autocomplete-wrapper:focus-within label.form-label {
+        transform: translateY(-20px) scale(0.85);
+        color: #1976d2;
+        font-weight: 400;
+    }
+    
+    /* When focused, keep label blue even if no value */
+    .material-autocomplete-wrapper:focus-within label.form-label {
+        color: #1976d2;
+    }
+    
+    /* When has value but not focused, label is gray on top */
+    .material-autocomplete-wrapper.has-value:not(:focus-within) label.form-label {
+        color: rgba(0, 0, 0, 0.6);
+    }
+    
+    /* Autocomplete input (text input instead of select) */
+    .material-autocomplete-input {
+        padding-right: 32px !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgba(0,0,0,0.54)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 8px center !important;
+        background-size: 16px !important;
+    }
+    
+    /* Dropdown styles for autocomplete */
+    .material-autocomplete-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: white;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-top: none;
+        border-radius: 0 0 4px 4px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        margin-top: -1px;
+    }
+    
+    .material-autocomplete-option {
+        padding: 10px 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: background-color 0.15s ease;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        min-height: 44px;
+    }
+    
+    .material-autocomplete-option:last-child {
+        border-bottom: none;
+    }
+    
+    .material-autocomplete-option:hover,
+    .material-autocomplete-option.hovered {
+        background-color: rgba(0, 0, 0, 0.04);
+    }
+    
+    .material-autocomplete-option.selected {
+        background-color: rgba(25, 118, 210, 0.08);
+    }
+    
+    .material-autocomplete-option.selected:hover,
+    .material-autocomplete-option.selected.hovered {
+        background-color: rgba(25, 118, 210, 0.12);
+    }
+    
+    
+    /* Scrollbar for dropdown */
+    .material-autocomplete-dropdown::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .material-autocomplete-dropdown::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    .material-autocomplete-dropdown::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+    }
+    
+    .material-autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Estilos para opciones de comprobante */
+    .comprobante-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+    }
+    
+    .comprobante-icon {
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+        flex-shrink: 0;
+    }
+    
+    .comprobante-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+    }
+    
+    .comprobante-initials {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.87);
+        line-height: 1.2;
+    }
+    
+    .comprobante-description {
+        font-size: 0.6875rem;
+        color: rgba(0, 0, 0, 0.6);
+        line-height: 1.2;
+    }
+    
+    /* Material Design Text Field Styles */
+    .material-text-field-wrapper {
+        position: relative;
+        width: 100%;
+        margin-top: 16px;
+        padding-top: 8px;
+    }
+    
+    .material-text-field {
+        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        font-size: 0.8125rem !important;
+        width: 100% !important;
+        min-height: 40px;
+        height: 40px;
+        padding: 16px 12px 8px 12px !important;
+        background-color: transparent !important;
+        border: 1px solid rgba(0, 0, 0, 0.42) !important;
+        border-radius: 4px !important;
+        outline: none !important;
+        transition: border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        color: rgba(0, 0, 0, 0.87) !important;
+    }
+    
+    /* When has value, reduce padding to match normal input */
+    .material-text-field-wrapper.has-value .material-text-field {
+        padding: 8px 12px !important;
+    }
+    
+    .material-text-field:hover {
+        border-color: rgba(0, 0, 0, 0.87) !important;
+    }
+    
+    .material-text-field:focus {
+        border-color: #1976d2 !important;
+        border-width: 2px !important;
+        box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2) !important;
+    }
+    
+    /* Floating label effect - label inside field by default */
+    .material-text-field-wrapper label.form-label {
+        position: absolute;
+        left: 12px;
+        top: 12px;
+        font-size: 0.8125rem;
+        color: rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        background-color: white;
+        padding: 0 4px;
+        transform-origin: left top;
+        z-index: 1;
+    }
+    
+    .material-text-field-wrapper label.form-label.small {
+        font-size: 0.75rem;
+    }
+    
+    /* Label moves up when focused or has value */
+    .material-text-field:focus ~ label.form-label,
+    .material-text-field-wrapper.has-value label.form-label,
+    .material-text-field-wrapper:focus-within label.form-label {
+        transform: translateY(-20px) scale(0.85);
+        color: #1976d2;
+        font-weight: 400;
+    }
+    
+    /* When focused, keep label blue even if no value */
+    .material-text-field-wrapper:focus-within label.form-label {
+        color: #1976d2;
+    }
+    
+    /* When has value but not focused, label is gray on top */
+    .material-text-field-wrapper.has-value:not(:focus-within) label.form-label {
+        color: rgba(0, 0, 0, 0.6);
+    }
+</style>
 
-<div class="row g-4">
-    <div class="col-12 col-lg-5 col-xl-3">
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <h5 class="mb-0">Registrar venta</h5>
-            </div>
-            <div class="card-body">
-                @if (!CanCreateSale)
-                {
-                    <div class="alert alert-warning">Selecciona una empresa con clientes, vendedores y productos para registrar ventas.</div>
-                }
+<div class="mt-0 d-flex flex-column ventas-container" style="height: calc(100vh - 100px); font-size: calc(1rem - 4px);">
+    <div class="card shadow-sm" style="flex-shrink: 0;">
+        <div class="card-header py-2">
+            <h5 class="mb-0">Registrar venta</h5>
+        </div>
+        <div class="card-body p-2">
+            @if (!CanCreateSale && _showCanCreateSaleAlert)
+            {
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    Selecciona una empresa con clientes, vendedores y productos para registrar ventas.
+                    <button type="button" class="btn-close" @onclick="() => _showCanCreateSaleAlert = false" aria-label="Close"></button>
+                </div>
+            }
 
-                <EditForm Model="_saleDraft" OnValidSubmit="SaveSale">
-                    <DataAnnotationsValidator />
-                    <ValidationSummary />
+            <EditForm Model="_saleDraft" OnValidSubmit="SaveSale">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
 
-                    <div class="mb-3">
-                        <label class="form-label">Fecha</label>
-                        <InputDate class="form-control" @bind-Value="_saleDraft.Date" />
+                <!-- Campos de información de la venta -->
+                <div class="row g-2 mb-0">
+                    <div class="col-md-2">
+                        <label class="form-label small">Fecha</label>
+                        <InputDate class="form-control form-control-sm" @bind-Value="_saleDraft.Date" />
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Cliente</label>
-                        <InputSelect class="form-select" @bind-Value="_saleDraft.CustomerId">
-                            @foreach (var customer in _customers)
+                    <div class="col-md-2">
+                        <div class="material-autocomplete-wrapper @(!string.IsNullOrEmpty(_saleDraft.TipoComprobante) ? "has-value" : "")">
+                            <input type="text" 
+                                   class="material-autocomplete material-autocomplete-input form-select-sm" 
+                                   value="@GetComprobanteDisplayText()"
+                                   @onfocus="OnComprobanteFocus"
+                                   @onblur="OnComprobanteBlur"
+                                   readonly
+                                   autocomplete="off" />
+                            <label class="form-label small">Comprobante</label>
+                            @if (_showComprobanteDropdown)
                             {
-                                <option value="@customer.Id">@customer.Name</option>
-                            }
-                        </InputSelect>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Vendedor</label>
-                        <InputSelect class="form-select" @bind-Value="_saleDraft.VendorId">
-                            @foreach (var vendor in _vendors)
-                            {
-                                <option value="@vendor.Id">@vendor.Name</option>
-                            }
-                        </InputSelect>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Detalle</label>
-                        @foreach (var line in _saleDraft.Lines)
-                        {
-                            <div class="row g-2 align-items-end mb-2">
-                                <div class="col-6">
-                                    <label class="form-label small text-muted">Producto</label>
-                                    <InputSelect class="form-select" @bind-Value="line.ProductId" @onchange="e => OnProductChanged(e, line)">
-                                        @foreach (var product in _products)
-                                        {
-                                            <option value="@product.Id">@product.Name</option>
-                                        }
-                                    </InputSelect>
-                                </div>
-                                <div class="col-3">
-                                    <label class="form-label small text-muted">Cantidad</label>
-                                    <InputNumber class="form-control" @bind-Value="line.Quantity" />
-                                </div>
-                                <div class="col-3">
-                                    <label class="form-label small text-muted">Precio</label>
-                                    <InputNumber class="form-control" @bind-Value="line.UnitPrice" />
-                                </div>
-                                <div class="col-12 text-end">
-                                    <small class="text-muted">Subtotal: @line.LineTotal.ToString("C")</small>
-                                    @if (_saleDraft.Lines.Count > 1)
+                                <div class="material-autocomplete-dropdown">
+                                    @foreach (var comprobante in _comprobantes)
                                     {
-                                        <button type="button" class="btn btn-link text-danger btn-sm" @onclick="() => RemoveLine(line)">Quitar</button>
+                                        var index = _comprobantes.IndexOf(comprobante);
+                                        <div class="material-autocomplete-option comprobante-option @(comprobante.Value == _saleDraft.TipoComprobante ? "selected" : "") @(index == _hoveredComprobanteIndex ? "hovered" : "")" 
+                                             @onclick="() => SelectComprobante(comprobante.Value)"
+                                             @onmouseenter="() => _hoveredComprobanteIndex = index">
+                                            <span class="comprobante-icon" style="background-color: @GetComprobanteColor(comprobante.Value);"></span>
+                                            <div class="comprobante-content">
+                                                <div class="comprobante-initials">@comprobante.Initials</div>
+                                                <div class="comprobante-description">@comprobante.Description</div>
+                                            </div>
+                                        </div>
                                     }
                                 </div>
-                            </div>
-                        }
-                        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="AddLine">Agregar producto</button>
-                    </div>
-
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between">
-                            <strong>Total</strong>
-                            <strong>@_saleDraft.Lines.Sum(l => l.LineTotal).ToString("C")</strong>
+                            }
                         </div>
                     </div>
+                    <div class="col-md-2">
+                        <div class="material-text-field-wrapper @(!string.IsNullOrEmpty(_saleDraft.NumeroComprobante) ? "has-value" : "")">
+                            <InputText class="material-text-field" @bind-Value="_saleDraft.NumeroComprobante" @onkeydown="OnNumeroComprobanteKeyDown" />
+                            <label class="form-label small">Número</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="material-autocomplete-wrapper @(_saleDraft.CustomerId > 0 ? "has-value" : "")">
+                            <input type="text" 
+                                   class="material-autocomplete material-autocomplete-input form-select-sm" 
+                                   value="@_clienteSearchText"
+                                   @oninput="@((ChangeEventArgs e) => { _clienteSearchText = e.Value?.ToString() ?? string.Empty; OnClienteSearchTextChanged(); })"
+                                   @onkeydown="OnClienteKeyDown"
+                                   @onfocus="OnClienteFocus"
+                                   @onblur="OnClienteBlur"
+                                   autocomplete="off" />
+                            <label class="form-label small">Cliente</label>
+                            @if (_showClienteDropdown && _filteredClientes.Any())
+                            {
+                                <div class="material-autocomplete-dropdown">
+                                    @foreach (var customer in _filteredClientes.Take(10))
+                                    {
+                                        var index = _filteredClientes.IndexOf(customer);
+                                        <div class="material-autocomplete-option comprobante-option @(customer.Id == _saleDraft.CustomerId ? "selected" : "") @(index == _hoveredClienteIndex ? "hovered" : "")" 
+                                             @onclick="() => SelectCliente(customer)"
+                                             @onmouseenter="() => _hoveredClienteIndex = index">
+                                            <span class="comprobante-icon" style="background-color: @GetClienteColor(customer.Id);"></span>
+                                            <div class="comprobante-content">
+                                                <div class="comprobante-initials">@customer.Id</div>
+                                                <div class="comprobante-description">@customer.Name</div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="material-text-field-wrapper @(!string.IsNullOrEmpty(SucursalValue) ? "has-value" : "")">
+                            <input type="text" 
+                                   class="material-text-field"
+                                   value="@SucursalValue"
+                                   @oninput="OnSucursalInput" />
+                            <label class="form-label small">Sucursal</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="material-autocomplete-wrapper @(_saleDraft.VendorId > 0 ? "has-value" : "")">
+                            <input type="text" 
+                                   class="material-autocomplete material-autocomplete-input form-select-sm" 
+                                   value="@_vendedorSearchText"
+                                   @oninput="@((ChangeEventArgs e) => { _vendedorSearchText = e.Value?.ToString() ?? string.Empty; OnVendedorSearchTextChanged(); })"
+                                   @onkeydown="OnVendedorKeyDown"
+                                   @onfocus="OnVendedorFocus"
+                                   @onblur="OnVendedorBlur"
+                                   autocomplete="off" />
+                            <label class="form-label small">Vendedor</label>
+                            @if (_showVendedorDropdown && _filteredVendedores.Any())
+                            {
+                                <div class="material-autocomplete-dropdown">
+                                    @foreach (var vendor in _filteredVendedores.Take(10))
+                                    {
+                                        var index = _filteredVendedores.IndexOf(vendor);
+                                        <div class="material-autocomplete-option comprobante-option @(vendor.Id == _saleDraft.VendorId ? "selected" : "") @(index == _hoveredVendedorIndex ? "hovered" : "")" 
+                                             @onclick="() => SelectVendedor(vendor)"
+                                             @onmouseenter="() => _hoveredVendedorIndex = index">
+                                            <span class="comprobante-icon" style="background-color: @GetVendedorColor(vendor.Id);"></span>
+                                            <div class="comprobante-content">
+                                                <div class="comprobante-initials">@vendor.Id</div>
+                                                <div class="comprobante-description">@vendor.Name</div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
 
-                    @if (!string.IsNullOrWhiteSpace(_error))
-                    {
-                        <div class="alert alert-danger">@_error</div>
-                    }
-
-                    <button type="submit" class="btn btn-primary w-100" disabled="@(!CanCreateSale)">Registrar venta</button>
-                </EditForm>
-            </div>
+                @if (!string.IsNullOrWhiteSpace(_error))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+                        @_error
+                        <button type="button" class="btn-close" @onclick="() => _error = null" aria-label="Close"></button>
+                    </div>
+                }
+            </EditForm>
         </div>
     </div>
-    <div class="col-12 col-lg-7 col-xl-9">
-        <div class="card shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Historial</h5>
-                <span class="badge text-bg-secondary">@_sales.Count ventas</span>
+
+    <div class="card shadow-sm mt-3" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <h5 class="mb-0">Historial</h5>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-primary" @onclick="OpenAddArticleModal">
+                    <span class="oi oi-plus"></span> Agregar artículo
+                </button>
             </div>
-            <div class="table-responsive">
+        </div>
+        @if (!string.IsNullOrWhiteSpace(_comprobanteError))
+        {
+            <div class="alert alert-danger alert-dismissible fade show m-3 mb-2" role="alert">
+                @_comprobanteError
+                <button type="button" class="btn-close" @onclick="() => _comprobanteError = null" aria-label="Close"></button>
+            </div>
+        }
+        <div class="table-responsive flex-grow-1" style="overflow-y: auto;">
                 <table class="table align-middle mb-0">
                     <thead>
                         <tr>
-                            <th>Folio</th>
-                            <th>Fecha</th>
-                            <th>Cliente</th>
-                            <th>Total</th>
-                            <th>Detalle</th>
+                            <th style="width: 5%;"></th>
+                            <th style="width: 8%;">Artículo</th>
+                            <th style="width: 30%;">Descripción</th>
+                            <th style="width: 12%;">Cantidad</th>
+                            <th style="width: 10%;">Precio</th>
+                            <th style="width: 15%;">Imp Total</th>
+                            <th style="width: 5%;"></th>
                         </tr>
                     </thead>
                     <tbody>
-                        @if (!_sales.Any())
+                        @if (!_newLines.Any())
                         {
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-4">Sin ventas registradas</td>
+                                <td colspan="7" class="text-center text-muted py-4">No hay artículos agregados. Use el botón "Agregar artículo" para comenzar.</td>
                             </tr>
                         }
-                        else
+                        @* Líneas nuevas para agregar artículos (paginadas) *@
+                        @{
+                            var lineIndex = 0;
+                        }
+                        @foreach (var line in PaginatedLines)
                         {
-                            @foreach (var sale in _sales.OrderByDescending(s => s.Date))
+                            var originalIndex = _newLines.IndexOf(line);
+                            var lineKey = $"new_{originalIndex}";
+                            var isExpanded = _expandedLines.Contains(lineKey);
+                            var lineEditState = GetLineEditState(lineKey, line);
+                            var impTotal = line.LineTotal + CalculateIVA(line, lineEditState) * line.Quantity;
+                            var editStateKey = $"edit_{lineKey}";
+                            if (!_gridEditStates.ContainsKey(editStateKey))
+                            {
+                                _gridEditStates[editStateKey] = new GridLineEditState
+                                {
+                                    ArticuloSearch = line.ProductId > 0 ? line.ProductId.ToString() : "",
+                                    ProductId = line.ProductId,
+                                    Quantity = line.Quantity,
+                                    UnitPrice = line.UnitPrice
+                                };
+                            }
+                            var gridEditState = _gridEditStates[editStateKey];
+                            // Sincronizar estado con valores actuales de la línea
+                            if (gridEditState.ProductId != line.ProductId || 
+                                gridEditState.Quantity != line.Quantity || 
+                                gridEditState.UnitPrice != line.UnitPrice)
+                            {
+                                gridEditState.ProductId = line.ProductId;
+                                gridEditState.Quantity = line.Quantity;
+                                gridEditState.UnitPrice = line.UnitPrice;
+                                gridEditState.ArticuloSearch = line.ProductId > 0 ? line.ProductId.ToString() : "";
+                            }
+                            <tr class="@(isExpanded ? "table-active" : "")" style="cursor: pointer; height: 40px;" @onclick="() => ToggleLineDetails(lineKey)">
+                                <td class="align-middle text-center">
+                                    @if (line.Product != null)
+                                    {
+                                        var imagePath = GetProductImageUrl(line.Product);
+                                        <div class="d-inline-flex align-items-center justify-content-center" style="width: 45px; height: 45px; border-radius: 50%; overflow: hidden; background-color: #f0f0f0;">
+                                            <img src="@imagePath" 
+                                                 alt="@line.Product.Name" 
+                                                 style="width: 100%; height: 100%; object-fit: cover; display: block;"
+                                                 onerror="this.onerror=null; this.src='/favicon.png'; this.parentElement.style.backgroundColor='#e0e0e0';" />
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                                            <span class="text-muted small">-</span>
+                                        </div>
+                                    }
+                                </td>
+                                <td @onclick:stopPropagation="true">
+                                    <div class="position-relative">
+                                        <input type="text" 
+                                               class="form-control form-control-sm" 
+                                               style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;"
+                                               id="@($"articulo_{lineKey}")"
+                                               list="@($"articulos_datalist_{lineKey}")"
+                                               value="@gridEditState.ArticuloSearch"
+                                               @oninput="@(e => OnArticuloInputSearch(e, gridEditState, line, lineKey))"
+                                               @onchange="@(e => OnArticuloSelectChange(e, gridEditState, line, lineKey))"
+                                               @onblur="@(e => OnArticuloBlur(e, gridEditState, line, lineKey))"
+                                               @onkeydown="@(e => OnArticuloKeyDown(e, gridEditState, line, lineKey))"
+                                               placeholder="Código..." 
+                                               autocomplete="off" />
+                                        <datalist id="@($"articulos_datalist_{lineKey}")">
+                                            @foreach (var product in GetFilteredProducts(gridEditState.ArticuloSearch))
+                                            {
+                                                <option value="@product.Id" data-name="@product.Name" data-price="@product.UnitPrice">@product.Id - @product.Name</option>
+                                            }
+                                        </datalist>
+                                    </div>
+                                </td>
+                                <td>@(line.Product?.Name ?? "N/A")</td>
+                                <td @onclick:stopPropagation="true">
+                                    <input type="number" 
+                                           class="form-control form-control-sm" 
+                                           style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px; max-width: 70px;"
+                                           value="@gridEditState.Quantity"
+                                           @onchange="@(e => { 
+                                               if (int.TryParse(e.Value?.ToString(), out var qty)) {
+                                                   gridEditState.Quantity = qty;
+                                                   OnGridQuantityChanged(gridEditState, line);
+                                               }
+                                           })"
+                                           @onkeydown="@(e => OnQuantityKeyDown(e, gridEditState, line, lineKey))"
+                                           id="@($"quantity_{lineKey}")" />
+                                </td>
+                                <td @onclick:stopPropagation="true">
+                                    <input type="number" 
+                                           class="form-control form-control-sm" 
+                                           style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px; max-width: 80px;"
+                                           value="@gridEditState.UnitPrice"
+                                           @onchange="@(e => { 
+                                               if (decimal.TryParse(e.Value?.ToString(), out var price)) {
+                                                   gridEditState.UnitPrice = price;
+                                                   OnGridPriceChanged(gridEditState, line);
+                                               }
+                                           })"
+                                           id="@($"price_{lineKey}")"
+                                           step="0.01" />
+                                </td>
+                                <td>@((gridEditState.Quantity * gridEditState.UnitPrice + (gridEditState.UnitPrice * (lineEditState.IVASeleccionado == -1 ? 0m : lineEditState.IVASeleccionado / 100m)) * gridEditState.Quantity).ToString("C"))</td>
+                                <td @onclick:stopPropagation="true">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger" 
+                                            @onclick="() => RemoveNewLine(line)"
+                                            title="Eliminar">
+                                        <span class="oi oi-trash"></span>
+                                    </button>
+                                </td>
+                            </tr>
+                            @if (isExpanded)
                             {
                                 <tr>
-                                    <td>#@sale.Id</td>
-                                    <td>@sale.Date.ToString("dd/MM/yyyy")</td>
-                                    <td>
-                                        <div>@sale.Customer?.Name</div>
-                                        <small class="text-muted">@sale.Vendor?.Name</small>
-                                    </td>
-                                    <td>@sale.Total.ToString("C")</td>
-                                    <td>
-                                        <ul class="small mb-0">
-                                            @foreach (var line in sale.Lines)
-                                            {
-                                                <li>@line.Product?.Name - @line.Quantity x @line.UnitPrice.ToString("C")</li>
-                                            }
-                                        </ul>
+                                    <td colspan="7" class="p-0 border-0" @onclick:stopPropagation="true">
+                                        <div class="bg-light p-3">
+                                            <div class="row g-3">
+                                                <div class="col-12">
+                                                    <div class="card border">
+                                                        <div class="card-header bg-white py-2">
+                                                            <strong class="small">@line.Product?.Name</strong>
+                                                        </div>
+                                                        <div class="card-body p-3">
+                                                            <div class="row g-3">
+                                                                <div class="col-6 col-md-3 col-lg-2">
+                                                                    <label class="form-label small">Lista</label>
+                                                                    <InputSelect class="form-select form-select-sm" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;" @bind-Value="lineEditState.ListaSeleccionada" @onchange="e => OnListaChanged(e, line, lineEditState)">
+                                                                        <option value="1">Lista 1</option>
+                                                                        <option value="2">Lista 2</option>
+                                                                        <option value="3">Lista 3</option>
+                                                                        <option value="4">Lista 4</option>
+                                                                    </InputSelect>
+                                                                </div>
+                                                                <div class="col-6 col-md-3 col-lg-2">
+                                                                    <label class="form-label small">Precio</label>
+                                                                    <InputNumber class="form-control form-control-sm" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;" @bind-Value="line.UnitPrice" />
+                                                                </div>
+                                                                <div class="col-6 col-md-3 col-lg-2">
+                                                                    <label class="form-label small">IVA</label>
+                                                                    @if (lineEditState.IVASeleccionado == -1)
+                                                                    {
+                                                                        <div class="input-group input-group-sm">
+                                                                            <InputNumber class="form-control" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;" @bind-Value="lineEditState.NuevoIVA" placeholder="%" />
+                                                                            <button class="btn btn-outline-primary btn-sm" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;" type="button" @onclick="() => AgregarNuevoIVA(lineEditState)">Agregar</button>
+                                                                            <button class="btn btn-outline-secondary btn-sm" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;" type="button" @onclick="() => CancelarNuevoIVA(lineEditState)">Cancelar</button>
+                                                                        </div>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <InputSelect class="form-select form-select-sm" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;" @bind-Value="lineEditState.IVASeleccionado" @onchange="e => OnIVAChanged(e, line, lineEditState)">
+                                                                            @foreach (var iva in _ivasDisponibles)
+                                                                            {
+                                                                                <option value="@iva">@iva%</option>
+                                                                            }
+                                                                            <option value="-1">+ Nuevo IVA...</option>
+                                                                        </InputSelect>
+                                                                    }
+                                                                </div>
+                                                                <div class="col-6 col-md-3 col-lg-2">
+                                                                    <label class="form-label small">IVA Calculado</label>
+                                                                    <div class="form-control form-control-sm bg-light" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;">@CalculateIVA(line, lineEditState).ToString("C")</div>
+                                                                </div>
+                                                                <div class="col-6 col-md-3 col-lg-2">
+                                                                    <label class="form-label small">Fabricación</label>
+                                                                    <div class="form-control form-control-sm bg-light" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;">@(line.Product?.Supplier?.Name ?? "N/A")</div>
+                                                                </div>
+                                                                <div class="col-6 col-md-3 col-lg-2">
+                                                                    <label class="form-label small">Oferta</label>
+                                                                    <div class="form-control form-control-sm bg-light" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;">@(line.UnitPrice < (line.Product?.UnitPrice ?? 0) ? "Sí" : "No")</div>
+                                                                </div>
+                                                                <div class="col-12 pt-2 border-top">
+                                                                    <div class="row">
+                                                                        <div class="col-md-4">
+                                                                            <div class="d-flex justify-content-between mb-2">
+                                                                                <span class="text-muted">Cantidad:</span>
+                                                                                <strong>@line.Quantity</strong>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="col-md-4">
+                                                                            <div class="d-flex justify-content-between mb-2">
+                                                                                <span class="text-muted">Subtotal:</span>
+                                                                                <strong>@line.LineTotal.ToString("C")</strong>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="col-md-4">
+                                                                            <div class="d-flex justify-content-between mb-2">
+                                                                                <span class="text-muted">Total con IVA:</span>
+                                                                                <strong>@((line.LineTotal + CalculateIVA(line, lineEditState) * line.Quantity).ToString("C"))</strong>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             }
                         }
                     </tbody>
                 </table>
+            </div>
+        @* Paginación *@
+        @if (TotalPages > 1)
+        {
+            <div class="border-top py-2 px-3">
+                <div class="d-flex justify-content-center">
+                    <div class="pagination-segmented" role="group">
+                        @for (int i = 1; i <= TotalPages; i++)
+                        {
+                            var pageNum = i;
+                            <button type="button"
+                                    class="pagination-segment @(pageNum == _currentPage ? "active" : "")"
+                                    @onclick="() => GoToPage(pageNum)">
+                                @pageNum
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        <div class="card-footer d-flex justify-content-between align-items-center py-2 border-top">
+            <div class="d-flex align-items-center gap-3">
+                <div>
+                    <strong>Total $ @GetTotalVenta().ToString("C")</strong>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" 
+                            class="btn-status btn-status-cargado @(_saleDraft.Estado == "Cargado" ? "active" : "")" 
+                            @onclick="@(() => SetEstado("Cargado"))"
+                            title="Cargado">
+                        Cargado
+                    </button>
+                    <button type="button" 
+                            class="btn-status btn-status-eliminada @(_saleDraft.Estado == "Eliminada" ? "active" : "")" 
+                            @onclick="@(() => SetEstado("Eliminada"))"
+                            title="Eliminada">
+                        Eliminada
+                    </button>
+                    <button type="button" 
+                            class="btn-status btn-status-cancelada @(_saleDraft.Estado == "Cancelada" ? "active" : "")" 
+                            @onclick="@(() => SetEstado("Cancelada"))"
+                            title="Cancelada">
+                        Cancelada
+                    </button>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm" style="background-color: rgb(185, 1, 56); color: white; border-color: rgb(185, 1, 56);" @onclick="ClearGrid">
+                    <span class="oi oi-action-undo"></span> Limpiar
+                </button>
+                <button type="button" class="btn btn-sm btn-registrar-venta" @onclick="SaveSaleFromGrid" disabled="@(!CanCreateSale || GetTotalVenta() <= 0)">
+                    Registrar venta <span class="oi oi-check"></span>
+                </button>
             </div>
         </div>
     </div>
@@ -158,6 +881,96 @@
     private List<Product> _products = new();
     private Sale _saleDraft = new();
     private string? _error;
+    private string? _comprobanteError;
+    private HashSet<string> _expandedLines = new();
+    private Dictionary<string, LineEditState> _lineEditStates = new();
+    private Dictionary<string, GridLineEditState> _gridEditStates = new();
+    private List<decimal> _ivasDisponibles = new() { 0m, 10.5m, 21m, 27m };
+    private bool _autoGenerandoNumero = false; // Bandera para saber si estamos auto-generando el número
+    private bool _showCanCreateSaleAlert = true;
+    
+    // Variables para autocomplete de cliente
+    private string _clienteSearchText = string.Empty;
+    private bool _showClienteDropdown = false;
+    private int _hoveredClienteIndex = -1;
+    private List<Customer> _filteredClientes = new();
+    
+    // Variables para autocomplete de vendedor
+    private string _vendedorSearchText = string.Empty;
+    private bool _showVendedorDropdown = false;
+    private int _hoveredVendedorIndex = -1;
+    private List<Vendor> _filteredVendedores = new();
+    
+    // Propiedad para binding de Sucursal
+    private string SucursalValue
+    {
+        get => _saleDraft.SucursalId?.ToString() ?? "";
+        set
+        {
+            if (int.TryParse(value, out int val))
+                _saleDraft.SucursalId = val;
+            else
+                _saleDraft.SucursalId = null;
+        }
+    }
+    
+    private void OnSucursalInput(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? "";
+        if (int.TryParse(value, out int val))
+            _saleDraft.SucursalId = val;
+        else
+            _saleDraft.SucursalId = null;
+    }
+    
+    // Variables para dropdown de comprobante
+    private bool _showComprobanteDropdown = false;
+    private int _hoveredComprobanteIndex = -1;
+    private List<ComprobanteInfo> _comprobantes = new()
+    {
+        new ComprobanteInfo { Value = "NPV", Initials = "NPV", Description = "Nota de Venta (NPV)" },
+        new ComprobanteInfo { Value = "Factura", Initials = "FAC", Description = "Factura" }
+    };
+    
+    private class ComprobanteInfo
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Initials { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+
+    // Lista de líneas nuevas para la grilla (artículos en edición)
+    private List<SaleLine> _newLines = new();
+    
+    // Variables de paginación
+    private int _currentPage = 1;
+    private const int _pageSize = 10;
+
+    private class LineEditState
+    {
+        public int ListaSeleccionada { get; set; } = 1;
+        public decimal IVASeleccionado { get; set; } = 21m;
+        public decimal NuevoIVA { get; set; }
+    }
+
+    private class GridLineEditState
+    {
+        public string ArticuloSearch { get; set; } = string.Empty;
+        public int? ArticuloCodigo 
+        { 
+            get 
+            { 
+                return int.TryParse(ArticuloSearch, out var num) ? num : null; 
+            }
+            set 
+            { 
+                ArticuloSearch = value?.ToString() ?? string.Empty; 
+            }
+        }
+        public int ProductId { get; set; }
+        public int Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+    }
 
     private bool CanCreateSale => TenantState.CurrentCompanyId is not null && _customers.Any() && _vendors.Any() && _products.Any();
 
@@ -198,28 +1011,416 @@
         {
             ResetSale();
         }
+        else
+        {
+            // Actualizar texto de búsqueda de cliente y vendedor si no se reseteó
+            UpdateClienteSearchText();
+            UpdateVendedorSearchText();
+        }
     }
 
     private void ResetSale()
     {
-        var defaultProduct = _products.FirstOrDefault();
         _saleDraft = new Sale
         {
             CompanyId = TenantState.CurrentCompanyId ?? 0,
             Date = DateTime.Today,
-            CustomerId = _customers.FirstOrDefault()?.Id ?? 0,
+            CustomerId = 0, // Sin cliente seleccionado por defecto
             VendorId = _vendors.FirstOrDefault()?.Id ?? 0,
+            TipoComprobante = string.Empty,
+            NumeroComprobante = string.Empty,
+            SucursalId = null,
+            Vencimiento = null,
+            ComprobOriginado = null,
+            RemitoAsociado = null
         };
 
         _saleDraft.Lines.Clear();
-        _saleDraft.Lines.Add(new SaleLine
-        {
-            ProductId = defaultProduct?.Id ?? 0,
-            Quantity = 1,
-            UnitPrice = defaultProduct?.UnitPrice ?? 0
-        });
+        _newLines.Clear();
+        _lineEditStates.Clear();
+        _gridEditStates.Clear();
+        _expandedLines.Clear();
 
         _error = null;
+        _comprobanteError = null;
+        
+        // Inicializar texto de búsqueda de cliente y vendedor
+        _clienteSearchText = string.Empty;
+        UpdateVendedorSearchText();
+    }
+    
+    private void UpdateClienteSearchText()
+    {
+        var selectedCustomer = _customers.FirstOrDefault(c => c.Id == _saleDraft.CustomerId);
+        _clienteSearchText = selectedCustomer != null ? $"{selectedCustomer.Id} - {selectedCustomer.Name}" : string.Empty;
+    }
+    
+    private void FilterClientes()
+    {
+        if (string.IsNullOrWhiteSpace(_clienteSearchText))
+        {
+            _filteredClientes = _customers.Take(10).ToList();
+        }
+        else
+        {
+            var searchLower = _clienteSearchText.ToLower().Trim();
+            var searchTerms = searchLower.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            
+            _filteredClientes = _customers
+                .Where(c => 
+                {
+                    // Buscar por ID exacto o parcial
+                    if (int.TryParse(searchLower, out int codigoBuscado))
+                    {
+                        if (c.Id == codigoBuscado || c.Id.ToString().Contains(searchLower))
+                            return true;
+                    }
+                    
+                    // Buscar por ID parcial
+                    if (c.Id.ToString().Contains(searchLower))
+                        return true;
+                    
+                    // Buscar por nombre completo
+                    var nombreLower = c.Name.ToLower();
+                    if (nombreLower.Contains(searchLower))
+                        return true;
+                    
+                    // Buscar por términos individuales (descripción parcial)
+                    if (searchTerms.Length > 0)
+                    {
+                        return searchTerms.All(term => nombreLower.Contains(term));
+                    }
+                    
+                    return false;
+                })
+                .OrderBy(c => 
+                {
+                    // Priorizar coincidencias exactas de ID
+                    if (int.TryParse(searchLower, out int codigo) && c.Id == codigo)
+                        return 0;
+                    // Luego coincidencias que empiezan con el texto
+                    if (c.Name.ToLower().StartsWith(searchLower))
+                        return 1;
+                    // Finalmente otras coincidencias
+                    return 2;
+                })
+                .Take(20)
+                .ToList();
+        }
+    }
+    
+    private void OnClienteSearchTextChanged()
+    {
+        // Limpiar selección si el usuario está escribiendo
+        if (!string.IsNullOrWhiteSpace(_clienteSearchText))
+        {
+            // Si el texto no coincide con el formato "ID - Nombre" del cliente seleccionado, limpiar selección
+            if (_saleDraft.CustomerId > 0)
+            {
+                var selectedCustomer = _customers.FirstOrDefault(c => c.Id == _saleDraft.CustomerId);
+                var expectedText = selectedCustomer != null ? $"{selectedCustomer.Id} - {selectedCustomer.Name}" : string.Empty;
+                if (_clienteSearchText != expectedText)
+                {
+                    _saleDraft.CustomerId = 0;
+                }
+            }
+        }
+        else
+        {
+            // Si el campo está vacío, limpiar selección
+            _saleDraft.CustomerId = 0;
+        }
+        
+        FilterClientes();
+        _showClienteDropdown = true;
+        _hoveredClienteIndex = -1;
+        StateHasChanged();
+    }
+    
+    private void OnClienteFocus()
+    {
+        FilterClientes();
+        _showClienteDropdown = true;
+    }
+    
+    private async Task OnClienteBlur()
+    {
+        // Esperar un poco para que el click en la opción se registre
+        await Task.Delay(200);
+        _showClienteDropdown = false;
+        
+        // Si hay un cliente seleccionado, actualizar el texto para mostrar "ID - Nombre"
+        if (_saleDraft.CustomerId > 0)
+        {
+            UpdateClienteSearchText();
+        }
+        else if (!string.IsNullOrWhiteSpace(_clienteSearchText))
+        {
+            // Si hay texto pero no hay selección, intentar buscar coincidencia exacta por ID
+            if (int.TryParse(_clienteSearchText.Trim(), out int codigoCliente))
+            {
+                var exactMatch = _customers.FirstOrDefault(c => c.Id == codigoCliente);
+                if (exactMatch != null)
+                {
+                    _saleDraft.CustomerId = exactMatch.Id;
+                    _clienteSearchText = $"{exactMatch.Id} - {exactMatch.Name}";
+                }
+                else
+                {
+                    // Si no hay coincidencia, limpiar el texto
+                    _clienteSearchText = string.Empty;
+                }
+            }
+            else
+            {
+                // Si no es un número y no hay selección, limpiar el texto
+                _clienteSearchText = string.Empty;
+            }
+        }
+        
+        StateHasChanged();
+    }
+    
+    private void SelectCliente(Customer customer)
+    {
+        _saleDraft.CustomerId = customer.Id;
+        _clienteSearchText = $"{customer.Id} - {customer.Name}";
+        _showClienteDropdown = false;
+        _hoveredClienteIndex = -1;
+        StateHasChanged();
+    }
+    
+    private string GetComprobanteDisplayText()
+    {
+        var comprobante = _comprobantes.FirstOrDefault(c => c.Value == _saleDraft.TipoComprobante);
+        return comprobante != null ? comprobante.Description : string.Empty;
+    }
+    
+    private string GetComprobanteColor(string value)
+    {
+        return value switch
+        {
+            "NPV" => "#9c27b0", // Morado
+            "Factura" => "#2196f3", // Azul
+            _ => "#757575" // Gris por defecto
+        };
+    }
+    
+    private string GetClienteColor(int clienteId)
+    {
+        // Generar un color consistente basado en el ID del cliente
+        var colors = new[] { "#9c27b0", "#2196f3", "#4caf50", "#ff9800", "#f44336", "#00bcd4", "#e91e63", "#795548" };
+        return colors[clienteId % colors.Length];
+    }
+    
+    private string GetVendedorColor(int vendedorId)
+    {
+        // Generar un color consistente basado en el ID del vendedor
+        var colors = new[] { "#9c27b0", "#2196f3", "#4caf50", "#ff9800", "#f44336", "#00bcd4", "#e91e63", "#795548" };
+        return colors[vendedorId % colors.Length];
+    }
+    
+    private void FilterVendedores()
+    {
+        if (string.IsNullOrWhiteSpace(_vendedorSearchText))
+        {
+            _filteredVendedores = _vendors.Take(10).ToList();
+        }
+        else
+        {
+            var searchLower = _vendedorSearchText.ToLower().Trim();
+            var searchTerms = searchLower.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            
+            _filteredVendedores = _vendors
+                .Where(v => 
+                {
+                    // Buscar por ID exacto o parcial
+                    if (int.TryParse(searchLower, out int codigoBuscado))
+                    {
+                        if (v.Id == codigoBuscado || v.Id.ToString().Contains(searchLower))
+                            return true;
+                    }
+                    
+                    // Buscar por ID parcial
+                    if (v.Id.ToString().Contains(searchLower))
+                        return true;
+                    
+                    // Buscar por nombre
+                    var nameLower = v.Name.ToLower();
+                    return searchTerms.All(term => nameLower.Contains(term));
+                })
+                .Take(10)
+                .ToList();
+        }
+    }
+    
+    private void OnVendedorSearchTextChanged()
+    {
+        // Limpiar selección si el usuario está escribiendo
+        if (!string.IsNullOrWhiteSpace(_vendedorSearchText))
+        {
+            // Si el texto no coincide con el formato "ID - Nombre" del vendedor seleccionado, limpiar selección
+            if (_saleDraft.VendorId > 0)
+            {
+                var selectedVendor = _vendors.FirstOrDefault(v => v.Id == _saleDraft.VendorId);
+                var expectedText = selectedVendor != null ? $"{selectedVendor.Id} - {selectedVendor.Name}" : string.Empty;
+                if (_vendedorSearchText != expectedText)
+                {
+                    _saleDraft.VendorId = 0;
+                }
+            }
+        }
+        else
+        {
+            // Si el campo está vacío, limpiar selección
+            _saleDraft.VendorId = 0;
+        }
+        
+        FilterVendedores();
+        _showVendedorDropdown = true;
+        _hoveredVendedorIndex = -1;
+        StateHasChanged();
+    }
+    
+    private void OnVendedorFocus()
+    {
+        FilterVendedores();
+        _showVendedorDropdown = true;
+    }
+    
+    private async Task OnVendedorBlur()
+    {
+        // Esperar un poco para que el click en la opción se registre
+        await Task.Delay(200);
+        _showVendedorDropdown = false;
+        
+        // Si hay un vendedor seleccionado, actualizar el texto para mostrar "ID - Nombre"
+        if (_saleDraft.VendorId > 0)
+        {
+            UpdateVendedorSearchText();
+        }
+        else if (!string.IsNullOrWhiteSpace(_vendedorSearchText))
+        {
+            // Si hay texto pero no hay selección, intentar buscar coincidencia exacta por ID
+            if (int.TryParse(_vendedorSearchText.Trim(), out int codigoVendedor))
+            {
+                var exactMatch = _vendors.FirstOrDefault(v => v.Id == codigoVendedor);
+                if (exactMatch != null)
+                {
+                    _saleDraft.VendorId = exactMatch.Id;
+                    _vendedorSearchText = $"{exactMatch.Id} - {exactMatch.Name}";
+                }
+                else
+                {
+                    // Si no hay coincidencia, limpiar el texto
+                    _vendedorSearchText = string.Empty;
+                }
+            }
+            else
+            {
+                // Si no es un número y no hay selección, limpiar el texto
+                _vendedorSearchText = string.Empty;
+            }
+        }
+        
+        StateHasChanged();
+    }
+    
+    private void SelectVendedor(Vendor vendor)
+    {
+        _saleDraft.VendorId = vendor.Id;
+        _vendedorSearchText = $"{vendor.Id} - {vendor.Name}";
+        _showVendedorDropdown = false;
+        _hoveredVendedorIndex = -1;
+        StateHasChanged();
+    }
+    
+    private void UpdateVendedorSearchText()
+    {
+        var selectedVendor = _vendors.FirstOrDefault(v => v.Id == _saleDraft.VendorId);
+        _vendedorSearchText = selectedVendor != null ? $"{selectedVendor.Id} - {selectedVendor.Name}" : string.Empty;
+    }
+    
+    private void OnVendedorKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && _filteredVendedores.Any())
+        {
+            var vendorToSelect = _hoveredVendedorIndex >= 0 && _hoveredVendedorIndex < _filteredVendedores.Count
+                ? _filteredVendedores[_hoveredVendedorIndex]
+                : _filteredVendedores.First();
+            SelectVendedor(vendorToSelect);
+        }
+        else if (e.Key == "ArrowDown")
+        {
+            if (_hoveredVendedorIndex < _filteredVendedores.Count - 1)
+            {
+                _hoveredVendedorIndex++;
+                _showVendedorDropdown = true;
+            }
+        }
+        else if (e.Key == "ArrowUp")
+        {
+            if (_hoveredVendedorIndex > 0)
+            {
+                _hoveredVendedorIndex--;
+            }
+        }
+        else if (e.Key == "Escape")
+        {
+            _showVendedorDropdown = false;
+        }
+    }
+    
+    private void OnComprobanteFocus()
+    {
+        _showComprobanteDropdown = true;
+        _hoveredComprobanteIndex = -1;
+    }
+    
+    private async Task OnComprobanteBlur()
+    {
+        await Task.Delay(200);
+        _showComprobanteDropdown = false;
+        StateHasChanged();
+    }
+    
+    private void SelectComprobante(string value)
+    {
+        _saleDraft.TipoComprobante = value;
+        _showComprobanteDropdown = false;
+        _hoveredComprobanteIndex = -1;
+        OnTipoComprobanteChanged(new ChangeEventArgs { Value = value });
+        StateHasChanged();
+    }
+    
+    private void OnClienteKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && _filteredClientes.Any())
+        {
+            var customerToSelect = _hoveredClienteIndex >= 0 && _hoveredClienteIndex < _filteredClientes.Count
+                ? _filteredClientes[_hoveredClienteIndex]
+                : _filteredClientes.First();
+            SelectCliente(customerToSelect);
+        }
+        else if (e.Key == "ArrowDown")
+        {
+            if (_hoveredClienteIndex < _filteredClientes.Count - 1)
+            {
+                _hoveredClienteIndex++;
+                _showClienteDropdown = true;
+            }
+        }
+        else if (e.Key == "ArrowUp")
+        {
+            if (_hoveredClienteIndex > 0)
+            {
+                _hoveredClienteIndex--;
+            }
+        }
+        else if (e.Key == "Escape")
+        {
+            _showClienteDropdown = false;
+        }
     }
 
     private void AddLine()
@@ -231,6 +1432,43 @@
             Quantity = 1,
             UnitPrice = defaultProduct?.UnitPrice ?? 0
         });
+    }
+
+    private async Task OpenAddArticleModal()
+    {
+        // Agregar una nueva línea vacía a la grilla
+        _newLines.Add(new SaleLine
+        {
+            ProductId = 0,
+            Quantity = 1,
+            UnitPrice = 0
+        });
+        
+        // Ir a la última página para mostrar la línea recién agregada
+        var newTotalPages = (int)Math.Ceiling((double)_newLines.Count / _pageSize);
+        if (newTotalPages > 0)
+        {
+            _currentPage = newTotalPages;
+        }
+        
+        StateHasChanged();
+        
+        // Enfocar el campo de artículo del nuevo row después del render
+        await InvokeAsync(async () =>
+        {
+            await FocusArticuloField($"new_{_newLines.Count - 1}");
+        });
+    }
+
+    private void RemoveNewLine(SaleLine line)
+    {
+        _newLines.Remove(line);
+        // Si la línea también está en la venta actual, removerla de ahí
+        if (_saleDraft.Lines.Contains(line))
+        {
+            _saleDraft.Lines.Remove(line);
+        }
+        StateHasChanged();
     }
 
     private void RemoveLine(SaleLine line)
@@ -247,12 +1485,21 @@
     {
         if (int.TryParse(e.Value?.ToString(), out var productId))
         {
+            OnProductChangedById(productId, line);
+        }
+    }
+
+    private void OnProductChangedById(int productId, SaleLine line)
+    {
+        if (productId > 0)
+        {
             line.ProductId = productId;
             var product = _products.FirstOrDefault(p => p.Id == productId);
             if (product is not null)
             {
                 line.UnitPrice = product.UnitPrice;
             }
+            StateHasChanged();
         }
     }
 
@@ -283,6 +1530,669 @@
             await LoadData(resetSale: true);
             StateHasChanged();
         });
+    }
+
+    private void OnTipoComprobanteChanged(ChangeEventArgs e)
+    {
+        _autoGenerandoNumero = true; // Marcar que estamos auto-generando
+        
+        // Limpiar el error de comprobante cuando se cambia el tipo
+        _comprobanteError = null;
+        
+        _saleDraft.TipoComprobante = e.Value?.ToString() ?? string.Empty;
+        
+        if (e.Value?.ToString() == "NPV")
+        {
+            // Auto-generar número NPV
+            var ultimoNPV = _sales
+                .Where(s => s.TipoComprobante == "NPV" && !string.IsNullOrEmpty(s.NumeroComprobante))
+                .Select(s => int.TryParse(s.NumeroComprobante, out var num) ? num : 0)
+                .DefaultIfEmpty(0)
+                .Max();
+            _saleDraft.NumeroComprobante = (ultimoNPV + 1).ToString();
+        }
+        else if (e.Value?.ToString() == "Factura")
+        {
+            // Auto-generar número Factura
+            var ultimoFactura = _sales
+                .Where(s => s.TipoComprobante == "Factura" && !string.IsNullOrEmpty(s.NumeroComprobante))
+                .Select(s => int.TryParse(s.NumeroComprobante, out var num) ? num : 0)
+                .DefaultIfEmpty(0)
+                .Max();
+            _saleDraft.NumeroComprobante = (ultimoFactura + 1).ToString();
+        }
+        else
+        {
+            // Limpiar número si no hay tipo seleccionado
+            _saleDraft.NumeroComprobante = string.Empty;
+        }
+        
+        _autoGenerandoNumero = false; // Ya no estamos auto-generando
+        StateHasChanged(); // Forzar actualización del UI para que la clase has-value se actualice
+        StateHasChanged();
+        
+        // NO buscar automáticamente cuando se auto-genera, solo cuando el usuario ingrese manualmente
+    }
+
+    private async Task OnNumeroComprobanteKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !_autoGenerandoNumero)
+        {
+            // Limpiar el error de comprobante cuando se ingresa un número
+            _comprobanteError = null;
+            
+            // Si el campo número está vacío, limpiar la grilla
+            if (string.IsNullOrWhiteSpace(_saleDraft.NumeroComprobante) || string.IsNullOrWhiteSpace(_saleDraft.TipoComprobante))
+            {
+                ClearGrid();
+            }
+            // Si hay tipo y número, buscar el comprobante existente
+            else if (!string.IsNullOrWhiteSpace(_saleDraft.TipoComprobante) && !string.IsNullOrWhiteSpace(_saleDraft.NumeroComprobante))
+            {
+                await LoadSaleByComprobante();
+            }
+        }
+    }
+
+    private async Task LoadSaleByComprobante()
+    {
+        if (TenantState.CurrentCompanyId is not int companyId)
+            return;
+
+        if (string.IsNullOrWhiteSpace(_saleDraft.TipoComprobante) || string.IsNullOrWhiteSpace(_saleDraft.NumeroComprobante))
+            return;
+
+        try
+        {
+            var existingSale = await Commerce.GetSaleByComprobanteAsync(companyId, _saleDraft.TipoComprobante, _saleDraft.NumeroComprobante);
+            
+            if (existingSale != null)
+            {
+                // Cargar los datos de la venta en el draft
+                _saleDraft.Date = existingSale.Date;
+                _saleDraft.CustomerId = existingSale.CustomerId;
+                _saleDraft.VendorId = existingSale.VendorId;
+                _saleDraft.SucursalId = existingSale.SucursalId;
+                _saleDraft.Vencimiento = existingSale.Vencimiento;
+                _saleDraft.ComprobOriginado = existingSale.ComprobOriginado;
+                _saleDraft.RemitoAsociado = existingSale.RemitoAsociado;
+                _saleDraft.Estado = existingSale.Estado;
+
+                // Limpiar líneas nuevas y estados de edición
+                _newLines.Clear();
+                _lineEditStates.Clear();
+                _gridEditStates.Clear();
+                _expandedLines.Clear();
+                _currentPage = 1; // Resetear a la primera página
+
+                // Cargar las líneas de la venta existente en _newLines para que aparezcan en la grilla
+                foreach (var line in existingSale.Lines)
+                {
+                    var product = _products.FirstOrDefault(p => p.Id == line.ProductId);
+                    _newLines.Add(new SaleLine
+                    {
+                        ProductId = line.ProductId,
+                        Quantity = line.Quantity,
+                        UnitPrice = line.UnitPrice,
+                        Product = product
+                    });
+                }
+
+                // También agregarlas al draft
+                _saleDraft.Lines.Clear();
+                
+                // Actualizar texto de búsqueda de cliente y vendedor
+                UpdateClienteSearchText();
+                UpdateVendedorSearchText();
+                foreach (var line in existingSale.Lines)
+                {
+                    var product = _products.FirstOrDefault(p => p.Id == line.ProductId);
+                    _saleDraft.Lines.Add(new SaleLine
+                    {
+                        ProductId = line.ProductId,
+                        Quantity = line.Quantity,
+                        UnitPrice = line.UnitPrice,
+                        Product = product
+                    });
+                }
+
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Error al cargar la venta: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleLineDetails(string lineKey)
+    {
+        if (_expandedLines.Contains(lineKey))
+        {
+            _expandedLines.Remove(lineKey);
+        }
+        else
+        {
+            _expandedLines.Add(lineKey);
+        }
+        StateHasChanged();
+    }
+
+    private LineEditState GetLineEditState(string lineKey, SaleLine line)
+    {
+        if (!_lineEditStates.ContainsKey(lineKey))
+        {
+            var state = new LineEditState();
+            // Determinar lista inicial basada en el precio
+            if (line.Product != null)
+            {
+                var precio = line.UnitPrice;
+                var tolerance = 0.01m;
+                
+                if (Math.Abs(precio - line.Product.PrecioLista1) < tolerance || 
+                    (line.Product.PrecioLista1 == 0 && Math.Abs(precio - line.Product.UnitPrice) < tolerance))
+                {
+                    state.ListaSeleccionada = 1;
+                }
+                else if (Math.Abs(precio - line.Product.PrecioLista2) < tolerance)
+                {
+                    state.ListaSeleccionada = 2;
+                }
+                else if (Math.Abs(precio - line.Product.PrecioLista3) < tolerance)
+                {
+                    state.ListaSeleccionada = 3;
+                }
+                else if (Math.Abs(precio - line.Product.PrecioLista4) < tolerance)
+                {
+                    state.ListaSeleccionada = 4;
+                }
+                else
+                {
+                    state.ListaSeleccionada = 1; // Por defecto
+                }
+            }
+            _lineEditStates[lineKey] = state;
+        }
+        return _lineEditStates[lineKey];
+    }
+
+    private void OnListaChanged(ChangeEventArgs e, SaleLine line, LineEditState state)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var lista))
+        {
+            state.ListaSeleccionada = lista;
+            if (line.Product != null)
+            {
+                // Actualizar precio según la lista seleccionada
+                line.UnitPrice = lista switch
+                {
+                    1 => line.Product.PrecioLista1 > 0 ? line.Product.PrecioLista1 : line.Product.UnitPrice,
+                    2 => line.Product.PrecioLista2 > 0 ? line.Product.PrecioLista2 : line.Product.UnitPrice,
+                    3 => line.Product.PrecioLista3 > 0 ? line.Product.PrecioLista3 : line.Product.UnitPrice,
+                    4 => line.Product.PrecioLista4 > 0 ? line.Product.PrecioLista4 : line.Product.UnitPrice,
+                    _ => line.Product.UnitPrice
+                };
+            }
+            StateHasChanged();
+        }
+    }
+
+    private void OnIVAChanged(ChangeEventArgs e, SaleLine line, LineEditState state)
+    {
+        if (decimal.TryParse(e.Value?.ToString(), out var iva))
+        {
+            state.IVASeleccionado = iva;
+            if (iva != -1)
+            {
+                state.NuevoIVA = 0;
+            }
+            StateHasChanged();
+        }
+    }
+
+    private void AgregarNuevoIVA(LineEditState state)
+    {
+        if (state.NuevoIVA > 0 && !_ivasDisponibles.Contains(state.NuevoIVA))
+        {
+            _ivasDisponibles.Add(state.NuevoIVA);
+            _ivasDisponibles.Sort();
+            state.IVASeleccionado = state.NuevoIVA;
+            state.NuevoIVA = 0;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelarNuevoIVA(LineEditState state)
+    {
+        state.IVASeleccionado = 21m; // Volver al IVA por defecto
+        state.NuevoIVA = 0;
+        StateHasChanged();
+    }
+
+    private decimal CalculateIVA(SaleLine line, LineEditState state)
+    {
+        var ivaRate = state.IVASeleccionado == -1 ? 0m : state.IVASeleccionado / 100m;
+        return line.UnitPrice * ivaRate;
+    }
+
+    private List<Product> GetFilteredProducts(string searchText)
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            return _products.Take(10).ToList();
+        }
+
+        var searchLower = searchText.ToLowerInvariant();
+        var results = new List<Product>();
+
+        // Buscar por ID numérico
+        if (int.TryParse(searchText, out var productId))
+        {
+            var exactMatch = _products.FirstOrDefault(p => p.Id == productId);
+            if (exactMatch != null)
+            {
+                results.Add(exactMatch);
+            }
+        }
+
+        // Buscar por ID que contenga el texto
+        var idMatches = _products.Where(p => p.Id.ToString().Contains(searchText)).Take(5).ToList();
+        foreach (var match in idMatches)
+        {
+            if (!results.Contains(match))
+            {
+                results.Add(match);
+            }
+        }
+
+        // Buscar por nombre o SKU
+        var nameMatches = _products.Where(p => 
+            p.Name.ToLowerInvariant().Contains(searchLower) || 
+            p.Sku.ToLowerInvariant().Contains(searchLower)).Take(5).ToList();
+        
+        foreach (var match in nameMatches)
+        {
+            if (!results.Contains(match))
+            {
+                results.Add(match);
+            }
+        }
+
+        return results.Take(10).ToList();
+    }
+
+    private void OnArticuloInputSearch(ChangeEventArgs e, GridLineEditState editState, SaleLine line, string lineKey)
+    {
+        editState.ArticuloSearch = e.Value?.ToString() ?? "";
+        StateHasChanged();
+    }
+
+    private void OnArticuloSelectChange(ChangeEventArgs e, GridLineEditState editState, SaleLine line, string lineKey)
+    {
+        var selectedValue = e.Value?.ToString() ?? "";
+        editState.ArticuloSearch = selectedValue;
+        
+        // Intentar completar siempre que haya un valor
+        AutocompletarArticulo(editState, line, lineKey);
+    }
+
+    private void OnArticuloBlur(FocusEventArgs e, GridLineEditState editState, SaleLine line, string lineKey)
+    {
+        // Cuando el campo pierde el foco, verificar y completar si hay un valor válido
+        // Esto es útil cuando se selecciona del datalist con el mouse
+        // El valor ya está actualizado en editState.ArticuloSearch por el evento oninput
+        if (!string.IsNullOrWhiteSpace(editState.ArticuloSearch))
+        {
+            // Intentar completar - puede ser un ID o un formato "ID - Nombre"
+            AutocompletarArticulo(editState, line, lineKey);
+        }
+    }
+
+    private void OnArticuloKeyDown(KeyboardEventArgs e, GridLineEditState editState, SaleLine line, string lineKey)
+    {
+        if (e.Key == "Enter")
+        {
+            AutocompletarArticulo(editState, line, lineKey);
+        }
+    }
+
+    private void AutocompletarArticulo(GridLineEditState editState, SaleLine line, string lineKey)
+    {
+        if (string.IsNullOrWhiteSpace(editState.ArticuloSearch))
+            return;
+
+        Product? product = null;
+        
+        // Si el formato es "ID - Nombre" del datalist, extraer solo el ID
+        var searchText = editState.ArticuloSearch;
+        if (searchText.Contains(" - "))
+        {
+            var parts = searchText.Split(" - ");
+            if (parts.Length > 0 && int.TryParse(parts[0].Trim(), out var idFromDatalist))
+            {
+                product = _products.FirstOrDefault(p => p.Id == idFromDatalist);
+            }
+        }
+        
+        // Si no se encontró, intentar buscar solo por ID numérico
+        if (product == null && int.TryParse(searchText.Trim(), out var productId))
+        {
+            product = _products.FirstOrDefault(p => p.Id == productId);
+        }
+        
+        // Si aún no se encontró, buscar por nombre exacto
+        if (product == null)
+        {
+            product = _products.FirstOrDefault(p => p.Name.Equals(searchText.Trim(), StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (product != null)
+        {
+            // Actualizar todos los campos de la línea
+            editState.ProductId = product.Id;
+            line.ProductId = product.Id;
+            line.UnitPrice = product.UnitPrice;
+            editState.UnitPrice = product.UnitPrice;
+            editState.ArticuloSearch = product.Id.ToString();
+            
+            // Siempre establecer cantidad en 1 cuando se selecciona un artículo
+            line.Quantity = 1;
+            editState.Quantity = 1;
+            
+            // Actualizar la navegación del producto para que la descripción se muestre
+            line.Product = product;
+            
+            // Si es una línea nueva, agregarla también a la venta actual
+            if (lineKey.StartsWith("new_") && !_saleDraft.Lines.Contains(line))
+            {
+                _saleDraft.Lines.Add(line);
+            }
+            
+            // Actualizar el estado de edición de la línea expandida
+            var lineEditState = GetLineEditState(lineKey, line);
+            if (lineEditState != null)
+            {
+                // Determinar lista inicial basada en el precio
+                var precio = product.UnitPrice;
+                var tolerance = 0.01m;
+                
+                if (Math.Abs(precio - product.PrecioLista1) < tolerance || 
+                    (product.PrecioLista1 == 0 && Math.Abs(precio - product.UnitPrice) < tolerance))
+                {
+                    lineEditState.ListaSeleccionada = 1;
+                }
+                else if (Math.Abs(precio - product.PrecioLista2) < tolerance)
+                {
+                    lineEditState.ListaSeleccionada = 2;
+                }
+                else if (Math.Abs(precio - product.PrecioLista3) < tolerance)
+                {
+                    lineEditState.ListaSeleccionada = 3;
+                }
+                else if (Math.Abs(precio - product.PrecioLista4) < tolerance)
+                {
+                    lineEditState.ListaSeleccionada = 4;
+                }
+            }
+            
+            StateHasChanged();
+            
+            // Enfocar y seleccionar el campo de cantidad después del render
+            _ = InvokeAsync(async () =>
+            {
+                await FocusQuantityField(lineKey);
+            });
+        }
+    }
+
+    private void OnGridQuantityChanged(GridLineEditState editState, SaleLine line)
+    {
+        line.Quantity = editState.Quantity;
+        StateHasChanged();
+    }
+
+    private void OnGridPriceChanged(GridLineEditState editState, SaleLine line)
+    {
+        line.UnitPrice = editState.UnitPrice;
+        StateHasChanged();
+    }
+
+    private async Task OnQuantityKeyDown(KeyboardEventArgs e, GridLineEditState editState, SaleLine line, string lineKey)
+    {
+        if (e.Key == "Enter" || e.Key == "NumpadEnter")
+        {
+            // Leer el valor actual del input usando una expresión directa
+            var quantityInputId = $"quantity_{lineKey}";
+            string? currentQuantityValue = null;
+            try
+            {
+                // Usar una expresión que devuelva directamente el valor
+                currentQuantityValue = await JSRuntime.InvokeAsync<string>("eval", 
+                    $"(document.getElementById('{quantityInputId}') || {{value: ''}}).value");
+            }
+            catch
+            {
+                // Si falla, usar el valor del estado
+                currentQuantityValue = editState.Quantity > 0 ? editState.Quantity.ToString() : null;
+            }
+            
+            // Verificar que la cantidad tenga un valor distinto de null/vacío (puede ser cualquier número válido)
+            bool shouldAddRow = false;
+            int quantityToUse = 0;
+            
+            if (!string.IsNullOrWhiteSpace(currentQuantityValue) && int.TryParse(currentQuantityValue, out quantityToUse))
+            {
+                shouldAddRow = true;
+            }
+            // Si el input está vacío pero hay un valor válido en el estado, también agregar row
+            else if (editState.Quantity > 0 || line.Quantity > 0)
+            {
+                quantityToUse = editState.Quantity > 0 ? editState.Quantity : line.Quantity;
+                shouldAddRow = true;
+            }
+            
+            if (shouldAddRow)
+            {
+                // Actualizar la cantidad en ambos lugares
+                editState.Quantity = quantityToUse;
+                line.Quantity = quantityToUse;
+                
+                // Agregar un nuevo row y enfocar el campo artículo
+                await AddNewRowAndFocusArticulo();
+            }
+        }
+    }
+
+    private async Task AddNewRowAndFocusArticulo()
+    {
+        // Agregar una nueva línea vacía a la grilla
+        _newLines.Add(new SaleLine
+        {
+            ProductId = 0,
+            Quantity = 1,
+            UnitPrice = 0
+        });
+        
+        // Ir a la última página para mostrar la línea recién agregada
+        var newTotalPages = (int)Math.Ceiling((double)_newLines.Count / _pageSize);
+        if (newTotalPages > 0)
+        {
+            _currentPage = newTotalPages;
+        }
+        
+        StateHasChanged();
+        
+        // Enfocar el campo de artículo del nuevo row después del render
+        await InvokeAsync(async () =>
+        {
+            await FocusArticuloField($"new_{_newLines.Count - 1}");
+        });
+    }
+
+    private async Task FocusQuantityField(string lineKey)
+    {
+        await Task.Delay(50); // Esperar un poco para que se renderice
+        var elementId = $"quantity_{lineKey}";
+        await JSRuntime.InvokeVoidAsync("eval", 
+            $"var input = document.getElementById('{elementId}'); " +
+            "if (input) { input.focus(); input.select(); }");
+    }
+
+    private async Task FocusArticuloField(string lineKey)
+    {
+        await Task.Delay(100); // Esperar un poco más para que se renderice el nuevo row
+        var elementId = $"articulo_{lineKey}";
+        await JSRuntime.InvokeVoidAsync("eval", 
+            $"var input = document.getElementById('{elementId}'); " +
+            "if (input) { input.focus(); input.select(); }");
+    }
+
+    private decimal GetTotalVenta()
+    {
+        decimal total = 0;
+        
+        // Calcular total de líneas nuevas (incluyen todas las líneas en edición)
+        foreach (var line in _newLines)
+        {
+            var lineKey = $"new_{_newLines.IndexOf(line)}";
+            var lineEditState = GetLineEditState(lineKey, line);
+            var ivaRate = lineEditState.IVASeleccionado == -1 ? 0m : lineEditState.IVASeleccionado / 100m;
+            total += line.LineTotal + (line.UnitPrice * ivaRate * line.Quantity);
+        }
+        
+        // Calcular total de líneas de la venta actual que no están en líneas nuevas
+        foreach (var line in _saleDraft.Lines)
+        {
+            if (!_newLines.Contains(line))
+            {
+                // Usar IVA por defecto si no hay estado de edición
+                var ivaRate = 21m / 100m; // IVA por defecto 21%
+                total += line.LineTotal + (line.UnitPrice * ivaRate * line.Quantity);
+            }
+        }
+        
+        return total;
+    }
+
+    private async Task SaveSaleFromGrid()
+    {
+        // Limpiar el error de comprobante
+        _comprobanteError = null;
+        
+        // Validar que haya un tipo de comprobante y número válido
+        if (string.IsNullOrWhiteSpace(_saleDraft.TipoComprobante) || string.IsNullOrWhiteSpace(_saleDraft.NumeroComprobante))
+        {
+            _comprobanteError = "Debe seleccionar tipo de comprobante";
+            StateHasChanged();
+            return;
+        }
+        
+        // Asegurar que todas las líneas nuevas estén en la venta actual
+        foreach (var line in _newLines)
+        {
+            if (!_saleDraft.Lines.Contains(line))
+            {
+                _saleDraft.Lines.Add(line);
+            }
+        }
+        _newLines.Clear();
+        
+        // Guardar la venta
+        await SaveSale();
+        
+        // Limpiar el error si se guardó correctamente
+        if (string.IsNullOrWhiteSpace(_error))
+        {
+            _comprobanteError = null;
+        }
+    }
+
+    // Propiedades de paginación
+    private int TotalPages => (int)Math.Ceiling((double)_newLines.Count / _pageSize);
+    
+    private IEnumerable<SaleLine> PaginatedLines
+    {
+        get
+        {
+            // Asegurar que la página actual sea válida
+            if (_currentPage > TotalPages && TotalPages > 0)
+            {
+                _currentPage = TotalPages;
+            }
+            else if (_currentPage < 1)
+            {
+                _currentPage = 1;
+            }
+            
+            var skip = (_currentPage - 1) * _pageSize;
+            return _newLines.Skip(skip).Take(_pageSize);
+        }
+    }
+    
+    private void GoToPage(int page)
+    {
+        if (page >= 1 && page <= TotalPages)
+        {
+            _currentPage = page;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearGrid()
+    {
+        // Limpiar todas las líneas nuevas de la grilla
+        for (int i = 0; i < _newLines.Count; i++)
+        {
+            var line = _newLines[i];
+            
+            // Si la línea también está en la venta actual, removerla de ahí
+            if (_saleDraft.Lines.Contains(line))
+            {
+                _saleDraft.Lines.Remove(line);
+            }
+            
+            // Limpiar estados de edición relacionados
+            var lineKey = $"new_{i}";
+            if (_lineEditStates.ContainsKey(lineKey))
+            {
+                _lineEditStates.Remove(lineKey);
+            }
+            var editStateKey = $"edit_{lineKey}";
+            if (_gridEditStates.ContainsKey(editStateKey))
+            {
+                _gridEditStates.Remove(editStateKey);
+            }
+        }
+        
+        _newLines.Clear();
+        _expandedLines.Clear();
+        _currentPage = 1; // Resetear a la primera página
+        StateHasChanged();
+    }
+
+    private void SetEstado(string estado)
+    {
+        _saleDraft.Estado = estado;
+        StateHasChanged();
+    }
+
+    private string GetProductImageUrl(Product? product)
+    {
+        if (product == null)
+        {
+            return "/favicon.png";
+        }
+
+        try
+        {
+            return ImageService.GetProductImagePath(product.ImagePath, product.Id);
+        }
+        catch
+        {
+            // Si hay error, usar favicon como fallback
+            return "/favicon.png";
+        }
     }
 }
 
