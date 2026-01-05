@@ -1,6 +1,15 @@
 ﻿<Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        @if (IsLoginPage(routeData))
+        {
+            <RouteView RouteData="@routeData" />
+        }
+        else
+        {
+            <AuthGuard>
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+            </AuthGuard>
+        }
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>
@@ -10,3 +19,12 @@
         </LayoutView>
     </NotFound>
 </Router>
+
+@code {
+    private bool IsLoginPage(RouteData routeData)
+    {
+        return routeData.PageType?.FullName?.Contains("Login") == true || 
+               (routeData.RouteValues.ContainsKey("page") && 
+                routeData.RouteValues["page"]?.ToString() == "/login");
+    }
+}

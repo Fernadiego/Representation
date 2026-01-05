@@ -1,0 +1,703 @@
+@page "/comprobantes"
+@using Microsoft.AspNetCore.Components.Web
+@using BlazorVentas.Data
+@inject CommerceService Commerce
+@inject TenantState TenantState
+@inject IJSRuntime JSRuntime
+@inject BlazorVentas.Services.SessionService SessionService
+@implements IDisposable
+
+<PageTitle>ABM Comprobantes</PageTitle>
+
+<style>
+    .card-header h5 {
+        font-size: 0.875rem;
+    }
+    
+    .filter-label {
+        font-size: 0.8125rem;
+        color: #6c757d;
+        margin-right: 0.5rem;
+    }
+    .filter-select {
+        font-size: 0.875rem;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        padding: 0.375rem 2rem 0.375rem 0.75rem;
+        background-color: white;
+        min-width: 140px;
+    }
+    .filter-select:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    
+    .comprobantes-table {
+        margin: 0;
+    }
+    .comprobantes-table th {
+        font-size: 0.8125rem;
+    }
+    .comprobantes-table tbody tr {
+        height: 40px !important;
+    }
+    .comprobantes-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa !important;
+    }
+    .comprobantes-table tbody tr:nth-child(odd) {
+        background-color: #ffffff !important;
+    }
+    .comprobantes-table tbody tr:hover {
+        background-color: #e9ecef !important;
+    }
+    .comprobantes-table tbody tr.table-active {
+        background-color: #cfe2ff !important;
+    }
+    .comprobantes-table tbody td {
+        padding: 0.3rem 0.5rem !important;
+        vertical-align: middle !important;
+    }
+    
+    /* Comprobante Cell */
+    .comprobante-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .comprobante-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    .comprobante-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .comprobante-name {
+        font-weight: 600;
+        color: #3c4858;
+        text-decoration: none;
+        margin-bottom: 2px;
+    }
+    .comprobante-name:hover {
+        color: #7c3aed;
+    }
+    .comprobante-code {
+        font-size: 0.75rem;
+        color: #9ca3af;
+    }
+    
+    /* Badges */
+    .tipo-badge {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        background-color: #e0e7ff;
+        color: #5b21b6;
+    }
+    
+    /* Action Buttons */
+    .action-btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin: 0 2px;
+    }
+    .action-btn-view {
+        background-color: #dbeafe;
+        color: #1e40af;
+    }
+    .action-btn-view:hover {
+        background-color: #bfdbfe;
+    }
+    .action-btn-edit {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+    .action-btn-edit:hover {
+        background-color: #fde68a;
+    }
+    .action-btn-delete {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+    .action-btn-delete:hover {
+        background-color: #fecaca;
+    }
+    
+    /* Pagination */
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-top: 1px solid #e5e7eb;
+        background-color: #f9fafb;
+    }
+    .pagination-info {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    .pagination-controls {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    .page-btn {
+        min-width: 32px;
+        height: 32px;
+        padding: 0 0.5rem;
+        border: 1px solid #d1d5db;
+        background-color: white;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .page-btn:hover:not(.active):not(:disabled) {
+        background-color: #f8f9fa;
+        border-color: #7c3aed;
+        color: #7c3aed;
+    }
+    .page-btn.active {
+        background: #7c3aed;
+        border-color: #7c3aed;
+        color: white;
+    }
+    .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    /* Search */
+    .search-box {
+        position: relative;
+    }
+    .search-box input {
+        padding-left: 2.5rem;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        font-size: 0.875rem;
+        height: 38px;
+        width: 250px;
+    }
+    .search-box input:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    .search-box .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+    }
+    
+    /* Modal Styles */
+    .modal-header {
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        color: white;
+        border-radius: 8px 8px 0 0;
+    }
+    .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+    .modal-content {
+        border: none;
+        border-radius: 8px;
+    }
+    .form-label {
+        font-weight: 500;
+        color: #4b5563;
+        font-size: 0.875rem;
+    }
+    .form-control, .form-select {
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    .empty-state-icon {
+        font-size: 4rem;
+        color: #d1d5db;
+        margin-bottom: 1rem;
+    }
+    .empty-state-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #4b5563;
+        margin-bottom: 0.5rem;
+    }
+    .empty-state-text {
+        color: #9ca3af;
+        margin-bottom: 1.5rem;
+    }
+</style>
+
+<!-- Filters -->
+<div class="card shadow-sm">
+    <div class="card-header py-2">
+        <h5 class="mb-0">
+            <span class="oi oi-document me-2"></span>ABM Comprobantes
+        </h5>
+    </div>
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <span class="filter-label">Filtrar por:</span>
+                
+                <select class="filter-select" @bind="_filterTipo">
+                    <option value="">Todos los Tipos</option>
+                    @for (int i = 0; i <= 9; i++)
+                    {
+                        <option value="@i">Tipo @i</option>
+                    }
+                </select>
+                
+                <div class="search-box">
+                    <span class="search-icon oi oi-magnifying-glass"></span>
+                    <input type="text" class="form-control" placeholder="Buscar comprobantes..." 
+                           @bind="_searchText" @bind:event="oninput" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Comprobantes Table -->
+<div class="card shadow-sm mt-3" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+    <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <h5 class="mb-0">Listado de Comprobantes</h5>
+        <button class="btn btn-sm btn-primary" @onclick="OpenAddModal">
+            <span class="oi oi-plus"></span> Agregar Comprobante
+        </button>
+    </div>
+    @if (_loading)
+    {
+        <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (!FilteredComprobantes.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-state-icon">📄</div>
+            <div class="empty-state-title">No se encontraron comprobantes</div>
+            <div class="empty-state-text">Intenta ajustar los filtros o agregar un nuevo comprobante.</div>
+            <button class="btn btn-primary" @onclick="OpenAddModal">
+                <span class="oi oi-plus"></span> Agregar Comprobante
+            </button>
+        </div>
+    }
+    else
+    {
+        <div style="flex: 1; overflow: auto;">
+            <table class="table table-hover comprobantes-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Código / Descripción</th>
+                        <th style="width: 15%;">Tipo</th>
+                        <th style="width: 20%;">Numeración</th>
+                        <th style="width: 35%;" class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var comprobante in PaginatedComprobantes)
+                    {
+                        <tr class="@(comprobante.Id == _selectedComprobanteId ? "table-active" : "")" 
+                            @onclick="() => SelectComprobante(comprobante.Id)">
+                            <td>
+                                <div class="comprobante-cell">
+                                    <div class="comprobante-avatar">
+                                        @GetInitials(comprobante.Codigo)
+                                    </div>
+                                    <div class="comprobante-info">
+                                        <div class="comprobante-name">@comprobante.Descripcion</div>
+                                        <div class="comprobante-code">@comprobante.Codigo</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="tipo-badge">@comprobante.Tipo</span>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(comprobante.Numeracion))
+                                {
+                                    <span class="badge bg-secondary">@comprobante.Numeracion</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <button class="action-btn action-btn-view" @onclick:stopPropagation="true" 
+                                        @onclick="() => OpenViewModal(comprobante)">
+                                    <span class="oi oi-eye"></span> Ver
+                                </button>
+                                <button class="action-btn action-btn-edit" @onclick:stopPropagation="true" 
+                                        @onclick="() => OpenEditModal(comprobante)">
+                                    <span class="oi oi-pencil"></span> Editar
+                                </button>
+                                <button class="action-btn action-btn-delete" @onclick:stopPropagation="true" 
+                                        @onclick="() => OpenDeleteModal(comprobante)">
+                                    <span class="oi oi-trash"></span> Eliminar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        @if (TotalPages > 1)
+        {
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Mostrando @((_currentPage - 1) * _pageSize + 1) - @(Math.Min(_currentPage * _pageSize, FilteredComprobantes.Count())) de @FilteredComprobantes.Count() comprobantes
+                </div>
+                <div class="pagination-controls">
+                    <button class="page-btn" @onclick="() => GoToPage(1)" disabled="@(_currentPage == 1)">
+                        <span class="oi oi-chevron-left"></span>
+                    </button>
+                    @for (int i = Math.Max(1, _currentPage - 2); i <= Math.Min(TotalPages, _currentPage + 2); i++)
+                    {
+                        var pageNum = i;
+                        <button class="page-btn @(pageNum == _currentPage ? "active" : "")" 
+                                @onclick="() => GoToPage(pageNum)">
+                            @pageNum
+                        </button>
+                    }
+                    <button class="page-btn" @onclick="() => GoToPage(TotalPages)" disabled="@(_currentPage == TotalPages)">
+                        <span class="oi oi-chevron-right"></span>
+                    </button>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<!-- Add/Edit Modal -->
+@if (_showAddEditModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        @(_editingComprobante.Id == 0 ? "Agregar Comprobante" : "Editar Comprobante")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseAddEditModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_editingComprobante" OnValidSubmit="SaveComprobante">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Código <span class="text-danger">*</span></label>
+                                <InputText class="form-control" @bind-Value="_editingComprobante.Codigo" />
+                                <ValidationMessage For="@(() => _editingComprobante.Codigo)" />
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Descripción <span class="text-danger">*</span></label>
+                                <InputText class="form-control" @bind-Value="_editingComprobante.Descripcion" />
+                                <ValidationMessage For="@(() => _editingComprobante.Descripcion)" />
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo <span class="text-danger">*</span></label>
+                                <InputNumber class="form-control" @bind-Value="_editingComprobante.Tipo" min="0" max="9" />
+                                <ValidationMessage For="@(() => _editingComprobante.Tipo)" />
+                                <small class="form-text text-muted">Número de tipo (0-9)</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Numeración</label>
+                                <InputText class="form-control" @bind-Value="_editingComprobante.Numeracion" />
+                                <ValidationMessage For="@(() => _editingComprobante.Numeracion)" />
+                                <small class="form-text text-muted">Código de numeración (ej: FU, FUB, CIN)</small>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer mt-4">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseAddEditModal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Guardar</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- View Modal -->
+@if (_showViewModal && _viewingComprobante != null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ver Comprobante</h5>
+                    <button type="button" class="btn-close" @onclick="CloseViewModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Código</label>
+                            <div class="form-control-plaintext">@_viewingComprobante.Codigo</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Descripción</label>
+                            <div class="form-control-plaintext">@_viewingComprobante.Descripcion</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Tipo</label>
+                            <div class="form-control-plaintext">
+                                <span class="tipo-badge">@_viewingComprobante.Tipo</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Numeración</label>
+                            <div class="form-control-plaintext">
+                                @if (!string.IsNullOrEmpty(_viewingComprobante.Numeracion))
+                                {
+                                    <span class="badge bg-secondary">@_viewingComprobante.Numeracion</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseViewModal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" @onclick="() => { CloseViewModal(); OpenEditModal(_viewingComprobante); }">
+                        <span class="oi oi-pencil"></span> Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete Modal -->
+@if (_showDeleteModal && _deletingComprobante != null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger">
+                    <h5 class="modal-title">Eliminar Comprobante</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea eliminar el comprobante <strong>@_deletingComprobante.Codigo - @_deletingComprobante.Descripcion</strong>?</p>
+                    <p class="text-danger"><small>Esta acción no se puede deshacer.</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteComprobante">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ComprobanteItem> _comprobantes = new();
+    private bool _loading = true;
+    private string _searchText = string.Empty;
+    private int? _filterTipo = null;
+    private int _selectedComprobanteId = 0;
+    
+    // Modals
+    private bool _showAddEditModal = false;
+    private bool _showViewModal = false;
+    private bool _showDeleteModal = false;
+    private ComprobanteItem _editingComprobante = new();
+    private ComprobanteItem? _viewingComprobante = null;
+    private ComprobanteItem? _deletingComprobante = null;
+    
+    // Pagination
+    private int _currentPage = 1;
+    private const int _pageSize = 10;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+    
+    private async Task LoadDataAsync()
+    {
+        _loading = true;
+        try
+        {
+            _comprobantes = await Commerce.GetComprobantesAsync();
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+    
+    private IEnumerable<ComprobanteItem> FilteredComprobantes
+    {
+        get
+        {
+            var query = _comprobantes.AsEnumerable();
+            
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                var searchLower = _searchText.ToLower();
+                query = query.Where(c => 
+                    c.Codigo.ToLower().Contains(searchLower) ||
+                    c.Descripcion.ToLower().Contains(searchLower) ||
+                    c.Numeracion.ToLower().Contains(searchLower));
+            }
+            
+            if (_filterTipo.HasValue)
+            {
+                query = query.Where(c => c.Tipo == _filterTipo.Value);
+            }
+            
+            return query.OrderBy(c => c.Codigo);
+        }
+    }
+    
+    private IEnumerable<ComprobanteItem> PaginatedComprobantes
+    {
+        get
+        {
+            var skip = (_currentPage - 1) * _pageSize;
+            return FilteredComprobantes.Skip(skip).Take(_pageSize);
+        }
+    }
+    
+    private int TotalPages => (int)Math.Ceiling((double)FilteredComprobantes.Count() / _pageSize);
+    
+    private void GoToPage(int page)
+    {
+        if (page >= 1 && page <= TotalPages)
+        {
+            _currentPage = page;
+            StateHasChanged();
+        }
+    }
+    
+    private string GetInitials(string codigo)
+    {
+        if (string.IsNullOrEmpty(codigo)) return "??";
+        return codigo.Length > 3 ? codigo.Substring(0, 3).ToUpper() : codigo.ToUpper();
+    }
+    
+    private void SelectComprobante(int id)
+    {
+        _selectedComprobanteId = _selectedComprobanteId == id ? 0 : id;
+        StateHasChanged();
+    }
+    
+    private void OpenAddModal()
+    {
+        _editingComprobante = new ComprobanteItem();
+        _showAddEditModal = true;
+    }
+    
+    private void OpenEditModal(ComprobanteItem comprobante)
+    {
+        _editingComprobante = new ComprobanteItem
+        {
+            Id = comprobante.Id,
+            Codigo = comprobante.Codigo,
+            Descripcion = comprobante.Descripcion,
+            Tipo = comprobante.Tipo,
+            Numeracion = comprobante.Numeracion
+        };
+        _showAddEditModal = true;
+    }
+    
+    private void CloseAddEditModal()
+    {
+        _showAddEditModal = false;
+        _editingComprobante = new ComprobanteItem();
+    }
+    
+    private async Task SaveComprobante()
+    {
+        var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        var usuarioId = token != null ? await SessionService.GetUsuarioIdAsync(token) : null;
+        await Commerce.SaveComprobanteAsync(_editingComprobante, usuarioId);
+        await LoadDataAsync();
+        CloseAddEditModal();
+    }
+    
+    private void OpenViewModal(ComprobanteItem comprobante)
+    {
+        _viewingComprobante = comprobante;
+        _showViewModal = true;
+    }
+    
+    private void CloseViewModal()
+    {
+        _showViewModal = false;
+        _viewingComprobante = null;
+    }
+    
+    private void OpenDeleteModal(ComprobanteItem comprobante)
+    {
+        _deletingComprobante = comprobante;
+        _showDeleteModal = true;
+    }
+    
+    private void CloseDeleteModal()
+    {
+        _showDeleteModal = false;
+        _deletingComprobante = null;
+    }
+    
+    private async Task DeleteComprobante()
+    {
+        if (_deletingComprobante != null)
+        {
+            var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+            var usuarioId = token != null ? await SessionService.GetUsuarioIdAsync(token) : null;
+            await Commerce.DeleteComprobanteAsync(_deletingComprobante.Id, usuarioId);
+            await LoadDataAsync();
+            CloseDeleteModal();
+        }
+    }
+    
+    public void Dispose()
+    {
+        // Cleanup if needed
+    }
+}
+

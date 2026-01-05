@@ -1,0 +1,806 @@
+@page "/importacion-masiva"
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Forms
+@using BlazorVentas.Data
+@inject CommerceService Commerce
+@inject TenantState TenantState
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<PageTitle>Importación Masiva</PageTitle>
+
+<style>
+    .importacion-container h5, .importacion-container h6 {
+        font-size: 0.875rem;
+    }
+    .importacion-container th {
+        font-size: 0.8125rem;
+    }
+    .importacion-container .form-control, .importacion-container .form-select {
+        font-size: 0.8125rem;
+    }
+    .importacion-container table tbody tr {
+        height: 40px !important;
+    }
+    .importacion-container table tbody tr:nth-child(even) {
+        background-color: #f8f9fa !important;
+    }
+    .importacion-container table tbody tr:nth-child(odd) {
+        background-color: #ffffff !important;
+    }
+    .importacion-container table tbody tr:hover {
+        background-color: #e9ecef !important;
+    }
+    .importacion-container table tbody tr.table-active {
+        background-color: #cfe2ff !important;
+    }
+    .importacion-container table tbody td {
+        padding: 0.3rem 0.5rem !important;
+        vertical-align: middle !important;
+    }
+    
+    .btn-importar {
+        background-color: #28a745 !important;
+        border-color: #28a745 !important;
+        color: white !important;
+    }
+    .btn-importar:hover:not(:disabled) {
+        background-color: #218838 !important;
+        border-color: #1e7e34 !important;
+    }
+    .btn-importar:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .btn-cargar-excel {
+        background-color: #0d6efd !important;
+        border-color: #0d6efd !important;
+        color: white !important;
+    }
+    .btn-cargar-excel:hover {
+        background-color: #0b5ed7 !important;
+        border-color: #0a58ca !important;
+    }
+    
+    .btn-descargar-plantilla {
+        background-color: #6c757d !important;
+        border-color: #6c757d !important;
+        color: white !important;
+    }
+    .btn-descargar-plantilla:hover {
+        background-color: #5c636a !important;
+        border-color: #565e64 !important;
+    }
+    
+    .file-input-hidden {
+        display: none;
+    }
+    
+    .checkbox-header {
+        width: 40px;
+        text-align: center;
+    }
+    
+    .select-all-btn {
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: #0d6efd;
+    }
+    .select-all-btn:hover {
+        color: #0b5ed7;
+    }
+    
+    .row-checkbox {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+    
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    .status-pendiente {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    .status-valido {
+        background-color: #28a745;
+        color: white;
+    }
+    .status-error {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .error-text {
+        color: #dc3545;
+        font-size: 0.75rem;
+    }
+    
+    .import-summary {
+        background-color: #e7f3ff;
+        border: 1px solid #b6d4fe;
+        border-radius: 8px;
+        padding: 12px 16px;
+    }
+    
+    .drop-zone {
+        display: block;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 40px;
+        text-align: center;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+        border-color: #0d6efd;
+        background-color: #e7f3ff;
+    }
+    .drop-zone-icon {
+        font-size: 3rem;
+        color: #6c757d;
+        margin-bottom: 1rem;
+    }
+    .drop-zone .file-input-hidden {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+</style>
+
+@if (_loading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 400px;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="importacion-container d-flex flex-column" style="height: calc(100vh - 120px);">
+        <!-- Cabecera -->
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+                <h5 class="mb-0">
+                    <span class="oi oi-cloud-upload me-2"></span>Importación Masiva de Comprobantes
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-descargar-plantilla" @onclick="DescargarPlantilla">
+                        <span class="oi oi-data-transfer-download me-1"></span> Descargar Plantilla
+                    </button>
+                    <label class="btn btn-sm btn-cargar-excel mb-0" for="fileInput">
+                        <span class="oi oi-spreadsheet me-1"></span> Cargar Excel
+                    </label>
+                    <InputFile id="fileInput" class="file-input-hidden" OnChange="OnFileSelected" accept=".xlsx,.xls,.csv" @ref="_fileInputRef" />
+                </div>
+            </div>
+            <div class="card-body py-3">
+                @if (!_comprobantesImportados.Any())
+                {
+                    <!-- Zona de arrastrar y soltar cuando no hay datos -->
+                    <div class="drop-zone @(_isDragOver ? "dragover" : "")">
+                        <InputFile class="file-input-hidden" OnChange="OnFileSelected" accept=".xlsx,.xls,.csv"
+                                   @ondragenter="HandleDragEnter"
+                                   @ondragleave="HandleDragLeave" />
+                        <div class="drop-zone-icon">
+                            <span class="oi oi-cloud-upload"></span>
+                        </div>
+                        <h5>Arrastra tu archivo Excel aquí</h5>
+                        <p class="text-muted mb-2">o haz clic para seleccionar un archivo</p>
+                        <small class="text-muted">Formatos soportados: .xlsx, .xls, .csv</small>
+                    </div>
+                }
+                else
+                {
+                    <!-- Resumen de importación -->
+                    <div class="import-summary d-flex justify-content-between align-items-center">
+                        <div class="d-flex gap-4">
+                            <div>
+                                <strong>Total:</strong> @_comprobantesImportados.Count comprobantes
+                            </div>
+                            <div>
+                                <strong>Seleccionados:</strong> @_comprobantesImportados.Count(c => c.Seleccionado)
+                            </div>
+                            <div>
+                                <strong>Válidos:</strong> <span class="text-success">@_comprobantesImportados.Count(c => c.EsValido)</span>
+                            </div>
+                            <div>
+                                <strong>Con errores:</strong> <span class="text-danger">@_comprobantesImportados.Count(c => !c.EsValido)</span>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="LimpiarImportacion">
+                                <span class="oi oi-trash me-1"></span> Limpiar
+                            </button>
+                            <button type="button" class="btn btn-sm btn-importar" 
+                                    @onclick="ImportarSeleccionados"
+                                    disabled="@(!_comprobantesImportados.Any(c => c.Seleccionado && c.EsValido))">
+                                <span class="oi oi-check me-1"></span> Importar Seleccionados (@_comprobantesImportados.Count(c => c.Seleccionado && c.EsValido))
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_error))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show mt-3 mb-0" role="alert">
+                        @_error
+                        <button type="button" class="btn-close" @onclick="() => _error = null" aria-label="Close"></button>
+                    </div>
+                }
+                
+                @if (!string.IsNullOrWhiteSpace(_successMessage))
+                {
+                    <div class="alert alert-success alert-dismissible fade show mt-3 mb-0" role="alert">
+                        @_successMessage
+                        <button type="button" class="btn-close" @onclick="() => _successMessage = null" aria-label="Close"></button>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Grilla de comprobantes -->
+        @if (_comprobantesImportados.Any())
+        {
+            <div class="card shadow-sm mt-3" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+                <div class="card-header d-flex justify-content-between align-items-center py-2">
+                    <h5 class="mb-0">Comprobantes a Importar</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small">@_comprobantesImportados.Count(c => c.Seleccionado) de @_comprobantesImportados.Count seleccionados</span>
+                    </div>
+                </div>
+                <div class="table-responsive flex-grow-1" style="overflow-y: auto;">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="checkbox-header">
+                                    <span class="select-all-btn oi @(_todosSeleccionados ? "oi-check" : "oi-list-rich")" 
+                                          title="@(_todosSeleccionados ? "Deseleccionar todos" : "Seleccionar todos")"
+                                          @onclick="ToggleSeleccionarTodos"></span>
+                                </th>
+                                <th style="width: 10%;">Tipo</th>
+                                <th style="width: 10%;">Número</th>
+                                <th style="width: 10%;">Fecha</th>
+                                <th style="width: 20%;">Cliente</th>
+                                <th style="width: 15%;">Vendedor</th>
+                                <th style="width: 10%;">Total</th>
+                                <th style="width: 10%;">Estado</th>
+                                <th style="width: 5%;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var comprobante in _comprobantesImportados)
+                            {
+                                var index = _comprobantesImportados.IndexOf(comprobante);
+                                var isExpanded = _expandedRows.Contains(index);
+                                <tr class="@(isExpanded ? "table-active" : "") @(!comprobante.EsValido ? "table-danger" : "")" 
+                                    style="cursor: pointer;" 
+                                    @onclick="() => ToggleRowExpanded(index)">
+                                    <td class="text-center" @onclick:stopPropagation="true">
+                                        <input type="checkbox" class="row-checkbox" 
+                                               checked="@comprobante.Seleccionado" 
+                                               @onchange="() => ToggleSeleccion(comprobante)"
+                                               disabled="@(!comprobante.EsValido)" />
+                                    </td>
+                                    <td @onclick:stopPropagation="true">
+                                        <input type="text" class="form-control form-control-sm" 
+                                               style="font-size: 0.75rem; max-width: 100px;"
+                                               value="@comprobante.TipoComprobante"
+                                               @onchange="@(e => { comprobante.TipoComprobante = e.Value?.ToString() ?? string.Empty; ValidarComprobante(comprobante); })" />
+                                    </td>
+                                    <td @onclick:stopPropagation="true">
+                                        <input type="text" class="form-control form-control-sm" 
+                                               style="font-size: 0.75rem; max-width: 120px;"
+                                               value="@comprobante.NumeroComprobante"
+                                               @onchange="@(e => { comprobante.NumeroComprobante = e.Value?.ToString() ?? string.Empty; ValidarComprobante(comprobante); })" />
+                                    </td>
+                                    <td @onclick:stopPropagation="true">
+                                        <input type="date" class="form-control form-control-sm" 
+                                               style="font-size: 0.75rem; max-width: 130px;"
+                                               value="@comprobante.Fecha.ToString("yyyy-MM-dd")"
+                                               @onchange="e => { if (DateTime.TryParse(e.Value?.ToString(), out var date)) { comprobante.Fecha = date; ValidarComprobante(comprobante); } }" />
+                                    </td>
+                                    <td @onclick:stopPropagation="true">
+                                        <input type="text" class="form-control form-control-sm" 
+                                               style="font-size: 0.75rem;"
+                                               value="@comprobante.ClienteNombre"
+                                               @onchange="@(e => { comprobante.ClienteNombre = e.Value?.ToString() ?? string.Empty; ValidarComprobante(comprobante); })" />
+                                    </td>
+                                    <td @onclick:stopPropagation="true">
+                                        <input type="text" class="form-control form-control-sm" 
+                                               style="font-size: 0.75rem;"
+                                               value="@comprobante.VendedorNombre"
+                                               @onchange="@(e => { comprobante.VendedorNombre = e.Value?.ToString() ?? string.Empty; ValidarComprobante(comprobante); })" />
+                                    </td>
+                                    <td>@comprobante.Total.ToString("C")</td>
+                                    <td>
+                                        <span class="status-badge @(comprobante.EsValido ? "status-valido" : "status-error")">
+                                            @(comprobante.EsValido ? "Válido" : "Error")
+                                        </span>
+                                    </td>
+                                    <td @onclick:stopPropagation="true">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                @onclick="() => EliminarComprobante(comprobante)"
+                                                title="Eliminar">
+                                            <span class="oi oi-trash"></span>
+                                        </button>
+                                    </td>
+                                </tr>
+                                @if (isExpanded)
+                                {
+                                    <tr>
+                                        <td colspan="9" class="p-0 border-0" @onclick:stopPropagation="true">
+                                            <div class="bg-light p-3">
+                                                <div class="row g-3">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label small">Sucursal</label>
+                                                        <input type="text" class="form-control form-control-sm" 
+                                                               style="font-size: 0.75rem;"
+                                                               value="@comprobante.Sucursal"
+                                                               @onchange="@(e => comprobante.Sucursal = e.Value?.ToString() ?? string.Empty)" />
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label small">CUIT Cliente</label>
+                                                        <input type="text" class="form-control form-control-sm" 
+                                                               style="font-size: 0.75rem;"
+                                                               value="@comprobante.ClienteCuit"
+                                                               @onchange="@(e => comprobante.ClienteCuit = e.Value?.ToString() ?? string.Empty)" />
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label small">Condición IVA</label>
+                                                        <input type="text" class="form-control form-control-sm" 
+                                                               style="font-size: 0.75rem;"
+                                                               value="@comprobante.CondicionIva"
+                                                               @onchange="@(e => comprobante.CondicionIva = e.Value?.ToString() ?? string.Empty)" />
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label small">Forma de Pago</label>
+                                                        <input type="text" class="form-control form-control-sm" 
+                                                               style="font-size: 0.75rem;"
+                                                               value="@comprobante.FormaPago"
+                                                               @onchange="@(e => comprobante.FormaPago = e.Value?.ToString() ?? string.Empty)" />
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label small">Subtotal</label>
+                                                        <div class="form-control form-control-sm bg-white" style="font-size: 0.75rem;">
+                                                            @comprobante.Subtotal.ToString("C")
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label small">IVA</label>
+                                                        <div class="form-control form-control-sm bg-white" style="font-size: 0.75rem;">
+                                                            @comprobante.Iva.ToString("C")
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label small">Descuento</label>
+                                                        <input type="number" class="form-control form-control-sm" 
+                                                               style="font-size: 0.75rem;"
+                                                               value="@comprobante.Descuento"
+                                                               @onchange="e => { if (decimal.TryParse(e.Value?.ToString(), out var d)) comprobante.Descuento = d; }" />
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label small">Total</label>
+                                                        <div class="form-control form-control-sm bg-white fw-bold" style="font-size: 0.75rem;">
+                                                            @comprobante.Total.ToString("C")
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label small">Observaciones</label>
+                                                        <input type="text" class="form-control form-control-sm" 
+                                                               style="font-size: 0.75rem;"
+                                                               value="@comprobante.Observaciones"
+                                                               @onchange="@(e => comprobante.Observaciones = e.Value?.ToString() ?? string.Empty)" />
+                                                    </div>
+                                                    
+                                                    @if (!comprobante.EsValido && !string.IsNullOrEmpty(comprobante.MensajeError))
+                                                    {
+                                                        <div class="col-12">
+                                                            <div class="alert alert-danger py-2 mb-0">
+                                                                <small><strong>Error:</strong> @comprobante.MensajeError</small>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    
+                                                    <!-- Detalle de artículos -->
+                                                    @if (comprobante.Lineas.Any())
+                                                    {
+                                                        <div class="col-12 mt-3">
+                                                            <h6 class="mb-2">Detalle de Artículos</h6>
+                                                            <table class="table table-sm table-bordered mb-0">
+                                                                <thead class="table-light">
+                                                                    <tr>
+                                                                        <th>Código</th>
+                                                                        <th>Descripción</th>
+                                                                        <th>Cantidad</th>
+                                                                        <th>Precio Unit.</th>
+                                                                        <th>IVA %</th>
+                                                                        <th>Subtotal</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @foreach (var linea in comprobante.Lineas)
+                                                                    {
+                                                                        <tr>
+                                                                            <td>
+                                                                                <input type="text" class="form-control form-control-sm border-0 bg-transparent" 
+                                                                                       style="font-size: 0.75rem;"
+                                                                                       value="@linea.CodigoArticulo"
+                                                                                       @onchange="@(e => linea.CodigoArticulo = e.Value?.ToString() ?? string.Empty)" />
+                                                                            </td>
+                                                                            <td>
+                                                                                <input type="text" class="form-control form-control-sm border-0 bg-transparent" 
+                                                                                       style="font-size: 0.75rem;"
+                                                                                       value="@linea.Descripcion"
+                                                                                       @onchange="@(e => linea.Descripcion = e.Value?.ToString() ?? string.Empty)" />
+                                                                            </td>
+                                                                            <td>
+                                                                                <input type="number" class="form-control form-control-sm border-0 bg-transparent" 
+                                                                                       style="font-size: 0.75rem; max-width: 80px;"
+                                                                                       value="@linea.Cantidad"
+                                                                                       @onchange="e => { if (int.TryParse(e.Value?.ToString(), out var q)) linea.Cantidad = q; }" />
+                                                                            </td>
+                                                                            <td>
+                                                                                <input type="number" class="form-control form-control-sm border-0 bg-transparent" 
+                                                                                       style="font-size: 0.75rem; max-width: 100px;"
+                                                                                       value="@linea.PrecioUnitario"
+                                                                                       step="0.01"
+                                                                                       @onchange="e => { if (decimal.TryParse(e.Value?.ToString(), out var p)) linea.PrecioUnitario = p; }" />
+                                                                            </td>
+                                                                            <td>
+                                                                                <input type="number" class="form-control form-control-sm border-0 bg-transparent" 
+                                                                                       style="font-size: 0.75rem; max-width: 60px;"
+                                                                                       value="@linea.PorcentajeIva"
+                                                                                       step="0.01"
+                                                                                       @onchange="e => { if (decimal.TryParse(e.Value?.ToString(), out var i)) linea.PorcentajeIva = i; }" />
+                                                                            </td>
+                                                                            <td class="text-end">@((linea.Cantidad * linea.PrecioUnitario).ToString("C"))</td>
+                                                                        </tr>
+                                                                    }
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+    private string? _successMessage;
+    private bool _isDragOver = false;
+    private InputFile? _fileInputRef;
+    
+    private List<ComprobanteImportado> _comprobantesImportados = new();
+    private HashSet<int> _expandedRows = new();
+    
+    private bool _todosSeleccionados => _comprobantesImportados.Any() && 
+                                         _comprobantesImportados.Where(c => c.EsValido).All(c => c.Seleccionado);
+
+    protected override async Task OnInitializedAsync()
+    {
+        TenantState.OnTenantChanged += HandleTenantChanged;
+        await LoadDataAsync();
+    }
+
+    public void Dispose()
+    {
+        TenantState.OnTenantChanged -= HandleTenantChanged;
+    }
+
+    private async void HandleTenantChanged(Company? company)
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadDataAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+        
+        try
+        {
+            // Cargar datos iniciales si es necesario
+            await Task.Delay(100); // Simular carga
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _error = null;
+        _successMessage = null;
+        
+        try
+        {
+            var file = e.File;
+            if (file == null) return;
+            
+            // Validar extensión
+            var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+            if (extension != ".xlsx" && extension != ".xls" && extension != ".csv")
+            {
+                _error = "Formato de archivo no soportado. Use archivos .xlsx, .xls o .csv";
+                return;
+            }
+            
+            // Simular procesamiento del archivo Excel
+            await ProcesarArchivoExcel(file);
+            
+            _successMessage = $"Se cargaron {_comprobantesImportados.Count} comprobantes del archivo {file.Name}";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Error al procesar el archivo: {ex.Message}";
+        }
+    }
+    
+    private async Task ProcesarArchivoExcel(IBrowserFile file)
+    {
+        // Simular la carga de datos desde Excel
+        // En una implementación real, aquí se usaría una librería como EPPlus o ClosedXML
+        _comprobantesImportados.Clear();
+        
+        // Datos de ejemplo para demostración
+        var random = new Random();
+        var tiposComprobante = new[] { "FA", "FB", "NC", "ND", "RE" };
+        var clientes = new[] { "Cliente ABC S.A.", "Distribuidora XYZ", "Comercial 123", "Empresa Demo", "Importadora Sur" };
+        var vendedores = new[] { "Juan Pérez", "María García", "Carlos López", "Ana Martínez" };
+        
+        for (int i = 1; i <= 10; i++)
+        {
+            var comprobante = new ComprobanteImportado
+            {
+                TipoComprobante = tiposComprobante[random.Next(tiposComprobante.Length)],
+                NumeroComprobante = $"0001-{(10000 + i):D8}",
+                Fecha = DateTime.Today.AddDays(-random.Next(30)),
+                ClienteNombre = clientes[random.Next(clientes.Length)],
+                ClienteCuit = $"30-{random.Next(10000000, 99999999)}-{random.Next(0, 9)}",
+                VendedorNombre = vendedores[random.Next(vendedores.Length)],
+                Sucursal = "0001",
+                CondicionIva = "Responsable Inscripto",
+                FormaPago = random.Next(2) == 0 ? "Contado" : "Cuenta Corriente",
+                Subtotal = random.Next(1000, 50000),
+                Descuento = random.Next(0, 500),
+                Observaciones = "",
+                Seleccionado = true,
+                EsValido = true
+            };
+            
+            comprobante.Iva = comprobante.Subtotal * 0.21m;
+            comprobante.Total = comprobante.Subtotal + comprobante.Iva - comprobante.Descuento;
+            
+            // Agregar líneas de detalle
+            var cantidadLineas = random.Next(1, 5);
+            for (int j = 1; j <= cantidadLineas; j++)
+            {
+                comprobante.Lineas.Add(new LineaComprobanteImportado
+                {
+                    CodigoArticulo = $"ART-{random.Next(1000, 9999)}",
+                    Descripcion = $"Producto de ejemplo {j}",
+                    Cantidad = random.Next(1, 10),
+                    PrecioUnitario = random.Next(100, 5000),
+                    PorcentajeIva = 21
+                });
+            }
+            
+            // Simular algunos errores
+            if (i == 3)
+            {
+                comprobante.EsValido = false;
+                comprobante.MensajeError = "Cliente no encontrado en el sistema";
+                comprobante.Seleccionado = false;
+            }
+            if (i == 7)
+            {
+                comprobante.EsValido = false;
+                comprobante.MensajeError = "Número de comprobante duplicado";
+                comprobante.Seleccionado = false;
+            }
+            
+            _comprobantesImportados.Add(comprobante);
+        }
+        
+        await Task.CompletedTask;
+    }
+    
+    private void ToggleRowExpanded(int index)
+    {
+        if (_expandedRows.Contains(index))
+            _expandedRows.Remove(index);
+        else
+            _expandedRows.Add(index);
+    }
+    
+    private void ToggleSeleccion(ComprobanteImportado comprobante)
+    {
+        if (comprobante.EsValido)
+            comprobante.Seleccionado = !comprobante.Seleccionado;
+    }
+    
+    private void ToggleSeleccionarTodos()
+    {
+        var nuevoEstado = !_todosSeleccionados;
+        foreach (var comprobante in _comprobantesImportados.Where(c => c.EsValido))
+        {
+            comprobante.Seleccionado = nuevoEstado;
+        }
+    }
+    
+    private void EliminarComprobante(ComprobanteImportado comprobante)
+    {
+        _comprobantesImportados.Remove(comprobante);
+    }
+    
+    private void ValidarComprobante(ComprobanteImportado comprobante)
+    {
+        comprobante.EsValido = true;
+        comprobante.MensajeError = "";
+        
+        if (string.IsNullOrWhiteSpace(comprobante.TipoComprobante))
+        {
+            comprobante.EsValido = false;
+            comprobante.MensajeError = "El tipo de comprobante es requerido";
+        }
+        else if (string.IsNullOrWhiteSpace(comprobante.NumeroComprobante))
+        {
+            comprobante.EsValido = false;
+            comprobante.MensajeError = "El número de comprobante es requerido";
+        }
+        else if (string.IsNullOrWhiteSpace(comprobante.ClienteNombre))
+        {
+            comprobante.EsValido = false;
+            comprobante.MensajeError = "El cliente es requerido";
+        }
+        
+        if (!comprobante.EsValido)
+            comprobante.Seleccionado = false;
+    }
+    
+    private void LimpiarImportacion()
+    {
+        _comprobantesImportados.Clear();
+        _expandedRows.Clear();
+        _error = null;
+        _successMessage = null;
+    }
+    
+    private async Task ImportarSeleccionados()
+    {
+        var seleccionados = _comprobantesImportados.Where(c => c.Seleccionado && c.EsValido).ToList();
+        
+        if (!seleccionados.Any())
+        {
+            _error = "No hay comprobantes seleccionados para importar";
+            return;
+        }
+        
+        try
+        {
+            // Aquí iría la lógica real de importación
+            await Task.Delay(500); // Simular procesamiento
+            
+            _successMessage = $"Se importaron correctamente {seleccionados.Count} comprobantes";
+            
+            // Remover los importados de la lista
+            foreach (var comprobante in seleccionados)
+            {
+                _comprobantesImportados.Remove(comprobante);
+            }
+            _expandedRows.Clear();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Error al importar: {ex.Message}";
+        }
+    }
+    
+    private async Task DescargarPlantilla()
+    {
+        try
+        {
+            // Generar contenido CSV de plantilla
+            var plantilla = @"TipoComprobante,NumeroComprobante,Fecha,ClienteNombre,ClienteCuit,VendedorNombre,Sucursal,CondicionIva,FormaPago,Subtotal,Iva,Descuento,Total,Observaciones,CodigoArticulo,DescripcionArticulo,Cantidad,PrecioUnitario,PorcentajeIva
+FA,0001-00000001,2024-01-15,Cliente Ejemplo S.A.,30-12345678-9,Juan Pérez,0001,Responsable Inscripto,Contado,10000,2100,0,12100,Observación de ejemplo,ART-001,Producto de ejemplo,2,5000,21";
+            
+            var bytes = System.Text.Encoding.UTF8.GetBytes(plantilla);
+            var base64 = Convert.ToBase64String(bytes);
+            
+            await JSRuntime.InvokeVoidAsync("eval", $@"
+                var link = document.createElement('a');
+                link.href = 'data:text/csv;base64,{base64}';
+                link.download = 'plantilla_importacion_comprobantes.csv';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            ");
+            
+            _successMessage = "Plantilla descargada correctamente";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Error al descargar plantilla: {ex.Message}";
+        }
+    }
+    
+    private void HandleDragEnter()
+    {
+        _isDragOver = true;
+    }
+    
+    private void HandleDragLeave()
+    {
+        _isDragOver = false;
+    }
+    
+    private void HandleDrop()
+    {
+        _isDragOver = false;
+        // El manejo del archivo se hace a través del InputFile
+    }
+    
+    // Clases para el modelo de datos
+    public class ComprobanteImportado
+    {
+        public string TipoComprobante { get; set; } = "";
+        public string NumeroComprobante { get; set; } = "";
+        public DateTime Fecha { get; set; } = DateTime.Today;
+        public string ClienteNombre { get; set; } = "";
+        public string ClienteCuit { get; set; } = "";
+        public string VendedorNombre { get; set; } = "";
+        public string Sucursal { get; set; } = "";
+        public string CondicionIva { get; set; } = "";
+        public string FormaPago { get; set; } = "";
+        public decimal Subtotal { get; set; }
+        public decimal Iva { get; set; }
+        public decimal Descuento { get; set; }
+        public decimal Total { get; set; }
+        public string Observaciones { get; set; } = "";
+        public bool Seleccionado { get; set; } = true;
+        public bool EsValido { get; set; } = true;
+        public string MensajeError { get; set; } = "";
+        public List<LineaComprobanteImportado> Lineas { get; set; } = new();
+    }
+    
+    public class LineaComprobanteImportado
+    {
+        public string CodigoArticulo { get; set; } = "";
+        public string Descripcion { get; set; } = "";
+        public int Cantidad { get; set; }
+        public decimal PrecioUnitario { get; set; }
+        public decimal PorcentajeIva { get; set; }
+    }
+}
+
+

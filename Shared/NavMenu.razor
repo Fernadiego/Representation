@@ -1,54 +1,394 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">BlazorVentas</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+﻿<div class="material-nav-menu">
+    <div class="material-nav-header">
+        <a class="material-nav-brand" href="">
+            <span class="oi oi-puzzle-piece" aria-hidden="true" style="margin-right: 8px;"></span>Anrober
+        </a>
     </div>
-</div>
+    <nav class="material-nav">
+        <NavLink class="material-nav-item" href="" Match="NavLinkMatch.All">
+            <span class="material-nav-icon oi oi-home" aria-hidden="true"></span>
+            <span class="material-nav-label">Home</span>
+        </NavLink>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
+        <!-- Ventas con submenú -->
+        <div class="material-nav-group">
+            <div class="material-nav-item material-nav-parent" @onclick="@(() => ToggleSubmenu("ventas"))">
+                <span class="material-nav-icon oi oi-spreadsheet" aria-hidden="true"></span>
+                <span class="material-nav-label">Ventas</span>
+                <span class="material-nav-arrow oi @(_expandedMenus.Contains("ventas") ? "oi-chevron-top" : "oi-chevron-bottom")" aria-hidden="true"></span>
+            </div>
+            @if (_expandedMenus.Contains("ventas"))
+            {
+                <div class="material-nav-submenu">
+                    <div class="material-nav-item material-nav-parent" @onclick="@(() => ToggleSubmenu("organizacion"))">
+                        <span class="material-nav-icon oi oi-folder" aria-hidden="true"></span>
+                        <span class="material-nav-label">Organización</span>
+                        <span class="material-nav-arrow oi @(_expandedMenus.Contains("organizacion") ? "oi-chevron-top" : "oi-chevron-bottom")" aria-hidden="true"></span>
+                    </div>
+                    @if (_expandedMenus.Contains("organizacion"))
+                    {
+                        <div class="material-nav-submenu">
+                            <NavLink class="material-nav-item material-nav-subitem" href="zonas">
+                                <span class="material-nav-icon oi oi-map-marker" aria-hidden="true"></span>
+                                <span class="material-nav-label">ABM Zonas</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="vendedores">
+                                <span class="material-nav-icon oi oi-briefcase" aria-hidden="true"></span>
+                                <span class="material-nav-label">ABM Vendedores</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="cobradores">
+                                <span class="material-nav-icon oi oi-credit-card" aria-hidden="true"></span>
+                                <span class="material-nav-label">ABM Cobradores</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="clientes" Match="NavLinkMatch.All">
+                                <span class="material-nav-icon oi oi-person" aria-hidden="true"></span>
+                                <span class="material-nav-label">ABM Cliente</span>
+                            </NavLink>
+                            <div class="material-nav-item material-nav-parent" @onclick="@(() => ToggleSubmenu("parametros"))" @onclick:stopPropagation="true">
+                                <span class="material-nav-icon oi oi-cog" aria-hidden="true"></span>
+                                <span class="material-nav-label">Parametros del Sistema</span>
+                                <span class="material-nav-arrow oi @(_expandedMenus.Contains("parametros") ? "oi-chevron-top" : "oi-chevron-bottom")" aria-hidden="true"></span>
+                            </div>
+                            @if (_expandedMenus.Contains("parametros"))
+                            {
+                                <div class="material-nav-submenu">
+                                    <NavLink class="material-nav-item material-nav-subitem" href="tipo-cliente">
+                                        <span class="material-nav-icon oi oi-tag" aria-hidden="true"></span>
+                                        <span class="material-nav-label">ABM Tipo de Cliente</span>
+                                    </NavLink>
+                                    <NavLink class="material-nav-item material-nav-subitem" href="descuento">
+                                        <span class="material-nav-icon oi oi-tag" aria-hidden="true"></span>
+                                        <span class="material-nav-label">ABM Descuento</span>
+                                    </NavLink>
+                                    <NavLink class="material-nav-item material-nav-subitem" href="provincias">
+                                        <span class="material-nav-icon oi oi-tag" aria-hidden="true"></span>
+                                        <span class="material-nav-label">ABM Provincias</span>
+                                    </NavLink>
+                                    <NavLink class="material-nav-item material-nav-subitem" href="descuento-articulo">
+                                        <span class="material-nav-icon oi oi-tag" aria-hidden="true"></span>
+                                        <span class="material-nav-label">ABM Descuento x Articulo</span>
+                                    </NavLink>
+                                    <NavLink class="material-nav-item material-nav-subitem" href="tipos-comprobantes">
+                                        <span class="material-nav-icon oi oi-tag" aria-hidden="true"></span>
+                                        <span class="material-nav-label">ABM Tipos Comprobantes</span>
+                                    </NavLink>
+                                    <NavLink class="material-nav-item material-nav-subitem" href="comprobantes">
+                                        <span class="material-nav-icon oi oi-tag" aria-hidden="true"></span>
+                                        <span class="material-nav-label">ABM Comprobantes</span>
+                                    </NavLink>
+                                    <NavLink class="material-nav-item material-nav-subitem" href="listado-tipo-cliente">
+                                        <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                        <span class="material-nav-label">Listado Tipo de Cliente</span>
+                                    </NavLink>
+                                    <NavLink class="material-nav-item material-nav-subitem" href="listado-descuento">
+                                        <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                        <span class="material-nav-label">Listado Descuento</span>
+                                    </NavLink>
+                                    <NavLink class="material-nav-item material-nav-subitem" href="listado-provincias">
+                                        <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                        <span class="material-nav-label">Listado Provincias</span>
+                                    </NavLink>
+                                    <NavLink class="material-nav-item material-nav-subitem" href="listado-descuento-articulo">
+                                        <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                        <span class="material-nav-label">Listado Descuento x Articulo</span>
+                                    </NavLink>
+                                    <NavLink class="material-nav-item material-nav-subitem" href="listado-tipos-comprobantes">
+                                        <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                        <span class="material-nav-label">Listado Tipos Comprobantes</span>
+                                    </NavLink>
+                                    <NavLink class="material-nav-item material-nav-subitem" href="listado-comprobantes">
+                                        <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                        <span class="material-nav-label">Listado Comprobantes</span>
+                                    </NavLink>
+                                </div>
+                            }
+                            <NavLink class="material-nav-item material-nav-subitem" href="listado-clientes">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Listado Clientes</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="listado-zonas">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Listado Zonas</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="listado-vendedores">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Listado Vendedores</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="listado-cobradores">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Listado Cobradores</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="listado-clase-cliente">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Listado Clase Cliente</span>
+                            </NavLink>
+                        </div>
+                    }
+                    
+                    <!-- Transacción con submenú al mismo nivel que Organización -->
+                    <div class="material-nav-item material-nav-parent" @onclick="@(() => ToggleSubmenu("transaccion"))">
+                        <span class="material-nav-icon oi oi-transfer" aria-hidden="true"></span>
+                        <span class="material-nav-label">Transacción</span>
+                        <span class="material-nav-arrow oi @(_expandedMenus.Contains("transaccion") ? "oi-chevron-top" : "oi-chevron-bottom")" aria-hidden="true"></span>
+                    </div>
+                    @if (_expandedMenus.Contains("transaccion"))
+                    {
+                        <div class="material-nav-submenu">
+                            <NavLink class="material-nav-item material-nav-subitem" href="ventas">
+                                <span class="material-nav-icon oi oi-spreadsheet" aria-hidden="true"></span>
+                                <span class="material-nav-label">Ventas</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="cobranzas">
+                                <span class="material-nav-icon oi oi-dollar" aria-hidden="true"></span>
+                                <span class="material-nav-label">Cobranzas</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="importacion-masiva">
+                                <span class="material-nav-icon oi oi-cloud-upload" aria-hidden="true"></span>
+                                <span class="material-nav-label">Importación Masiva</span>
+                            </NavLink>
+                        </div>
+                    }
+                    
+                    <!-- Informes Operativos con submenú -->
+                    <div class="material-nav-item material-nav-parent" @onclick="@(() => ToggleSubmenu("informes-operativos"))" @onclick:stopPropagation="true">
+                        <span class="material-nav-icon oi oi-document" aria-hidden="true"></span>
+                        <span class="material-nav-label">Informes Operativos</span>
+                        <span class="material-nav-arrow oi @(_expandedMenus.Contains("informes-operativos") ? "oi-chevron-top" : "oi-chevron-bottom")" aria-hidden="true"></span>
+                    </div>
+                    @if (_expandedMenus.Contains("informes-operativos"))
+                    {
+                        <div class="material-nav-submenu">
+                            <NavLink class="material-nav-item material-nav-subitem" href="listado-pendientes">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Listado de Pendientes</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="pendientes-articulo">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Pendientes x Articulo</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="pendientes-cliente">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Pendientes x Cliente</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="cancelacion-pendientes">
+                                <span class="material-nav-icon oi oi-x" aria-hidden="true"></span>
+                                <span class="material-nav-label">Cancelacion de Pendientes</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="listados-movimientos">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Listados de Movimientos</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="movimientos-cliente">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Movimientos x Cliente</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="registro-comprobantes">
+                                <span class="material-nav-icon oi oi-file" aria-hidden="true"></span>
+                                <span class="material-nav-label">Registro de Comprobantes</span>
+                            </NavLink>
+                        </div>
+                    }
+                    
+                    <!-- Informes Cuenta Corriente con submenú -->
+                    <div class="material-nav-item material-nav-parent" @onclick="@(() => ToggleSubmenu("informes-cta-cte"))" @onclick:stopPropagation="true">
+                        <span class="material-nav-icon oi oi-document" aria-hidden="true"></span>
+                        <span class="material-nav-label">Informes Cuenta Corriente</span>
+                        <span class="material-nav-arrow oi @(_expandedMenus.Contains("informes-cta-cte") ? "oi-chevron-top" : "oi-chevron-bottom")" aria-hidden="true"></span>
+                    </div>
+                    @if (_expandedMenus.Contains("informes-cta-cte"))
+                    {
+                        <div class="material-nav-submenu">
+                            <NavLink class="material-nav-item material-nav-subitem" href="resumen-cuenta-corriente">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Resumen de Cuenta Corriente</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="aplicacion-pagos">
+                                <span class="material-nav-icon oi oi-dollar" aria-hidden="true"></span>
+                                <span class="material-nav-label">Aplicación de Pagos</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="cancelacion-comprobantes">
+                                <span class="material-nav-icon oi oi-x" aria-hidden="true"></span>
+                                <span class="material-nav-label">Cancelacion de Comprobantes</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="resumen-cuenta-corriente-detalle">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Resumen de Cuenta Corriente</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="deudas-cliente-alfabetico">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Deudas x Cliente Alfabetico</span>
+                            </NavLink>
+                        </div>
+                    }
+                    
+                    <!-- Informes Movimientos con submenú -->
+                    <div class="material-nav-item material-nav-parent" @onclick="@(() => ToggleSubmenu("informes-mov"))" @onclick:stopPropagation="true">
+                        <span class="material-nav-icon oi oi-document" aria-hidden="true"></span>
+                        <span class="material-nav-label">Informes Movimientos</span>
+                        <span class="material-nav-arrow oi @(_expandedMenus.Contains("informes-mov") ? "oi-chevron-top" : "oi-chevron-bottom")" aria-hidden="true"></span>
+                    </div>
+                    @if (_expandedMenus.Contains("informes-mov"))
+                    {
+                        <div class="material-nav-submenu">
+                            <NavLink class="material-nav-item material-nav-subitem" href="ventas-cliente">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Ventas x Cliente</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="ventas-zona">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Ventas x Zona</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="ventas-vendedor">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Ventas x Vendedor</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="ingresos-cliente">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Ingresos x Cliente</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="ingresos-zona">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Ingresos x Zona</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="ingresos-vendedor">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Ingresos x Vendedor</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="ingresos-cobrador">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Ingresos x Cobrador</span>
+                            </NavLink>
+                        </div>
+                    }
+                </div>
+            }
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="ventas">
-                <span class="oi oi-spreadsheet" aria-hidden="true"></span> Ventas
-            </NavLink>
+        
+        <!-- Stock con submenú -->
+        <div class="material-nav-group">
+            <div class="material-nav-item material-nav-parent" @onclick="@(() => ToggleSubmenu("stock"))">
+                <span class="material-nav-icon oi oi-layers" aria-hidden="true"></span>
+                <span class="material-nav-label">Stock</span>
+                <span class="material-nav-arrow oi @(_expandedMenus.Contains("stock") ? "oi-chevron-top" : "oi-chevron-bottom")" aria-hidden="true"></span>
+            </div>
+            @if (_expandedMenus.Contains("stock"))
+            {
+                <div class="material-nav-submenu">
+                    <!-- Organización -->
+                    <div class="material-nav-item material-nav-parent" @onclick="@(() => ToggleSubmenu("stock-organizacion"))" @onclick:stopPropagation="true">
+                        <span class="material-nav-icon oi oi-folder" aria-hidden="true"></span>
+                        <span class="material-nav-label">Organización</span>
+                        <span class="material-nav-arrow oi @(_expandedMenus.Contains("stock-organizacion") ? "oi-chevron-top" : "oi-chevron-bottom")" aria-hidden="true"></span>
+                    </div>
+                    @if (_expandedMenus.Contains("stock-organizacion"))
+                    {
+                        <div class="material-nav-submenu">
+                            <NavLink class="material-nav-item material-nav-subitem" href="abm-familias">
+                                <span class="material-nav-icon oi oi-tag" aria-hidden="true"></span>
+                                <span class="material-nav-label">ABM Familias</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="abm-categorias">
+                                <span class="material-nav-icon oi oi-tag" aria-hidden="true"></span>
+                                <span class="material-nav-label">ABM Categorias</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="listados-familias">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Listados Familias</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="listados-categorias">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Listados Categorias</span>
+                            </NavLink>
+                        </div>
+                    }
+                    
+                    <!-- Artículos -->
+                    <div class="material-nav-item material-nav-parent" @onclick="@(() => ToggleSubmenu("stock-articulos"))" @onclick:stopPropagation="true">
+                        <span class="material-nav-icon oi oi-box" aria-hidden="true"></span>
+                        <span class="material-nav-label">Artículos</span>
+                        <span class="material-nav-arrow oi @(_expandedMenus.Contains("stock-articulos") ? "oi-chevron-top" : "oi-chevron-bottom")" aria-hidden="true"></span>
+                    </div>
+                    @if (_expandedMenus.Contains("stock-articulos"))
+                    {
+                        <div class="material-nav-submenu">
+                            <NavLink class="material-nav-item material-nav-subitem" href="abm-articulos">
+                                <span class="material-nav-icon oi oi-tag" aria-hidden="true"></span>
+                                <span class="material-nav-label">ABM Articulos</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="abm-articulos-cliente">
+                                <span class="material-nav-icon oi oi-tag" aria-hidden="true"></span>
+                                <span class="material-nav-label">ABM Articulos x Cliente</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="listado-articulos">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Listado de Articulos</span>
+                            </NavLink>
+                            <NavLink class="material-nav-item material-nav-subitem" href="listado-articulos-cliente">
+                                <span class="material-nav-icon oi oi-list" aria-hidden="true"></span>
+                                <span class="material-nav-label">Listado Articulos x Cliente</span>
+                            </NavLink>
+                        </div>
+                    }
+                </div>
+            }
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="productos">
-                <span class="oi oi-box" aria-hidden="true"></span> Productos
-            </NavLink>
+        
+        <!-- Contabilidad con submenú -->
+        <div class="material-nav-group">
+            <div class="material-nav-item material-nav-parent" @onclick="@(() => ToggleSubmenu("contabilidad"))">
+                <span class="material-nav-icon oi oi-calculator" aria-hidden="true"></span>
+                <span class="material-nav-label">Contabilidad</span>
+                <span class="material-nav-arrow oi @(_expandedMenus.Contains("contabilidad") ? "oi-chevron-top" : "oi-chevron-bottom")" aria-hidden="true"></span>
+            </div>
+            @if (_expandedMenus.Contains("contabilidad"))
+            {
+                <div class="material-nav-submenu">
+                    <!-- Organización -->
+                    <div class="material-nav-item material-nav-parent" @onclick="@(() => ToggleSubmenu("contab-organizacion"))" @onclick:stopPropagation="true">
+                        <span class="material-nav-icon oi oi-folder" aria-hidden="true"></span>
+                        <span class="material-nav-label">Organización</span>
+                        <span class="material-nav-arrow oi @(_expandedMenus.Contains("contab-organizacion") ? "oi-chevron-top" : "oi-chevron-bottom")" aria-hidden="true"></span>
+                    </div>
+                    @if (_expandedMenus.Contains("contab-organizacion"))
+                    {
+                        <div class="material-nav-submenu">
+                            <NavLink class="material-nav-item material-nav-subitem" href="numeracion-correlativa">
+                                <span class="material-nav-icon oi oi-list-rich" aria-hidden="true"></span>
+                                <span class="material-nav-label">Numeracion Correlativa</span>
+                            </NavLink>
+                        </div>
+                    }
+                </div>
+            }
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="proveedores">
-                <span class="oi oi-people" aria-hidden="true"></span> Proveedores
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="vendedores">
-                <span class="oi oi-briefcase" aria-hidden="true"></span> Vendedores
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="clientes">
-                <span class="oi oi-person" aria-hidden="true"></span> Clientes
-            </NavLink>
-        </div>
+        
+        <NavLink class="material-nav-item" href="productos">
+            <span class="material-nav-icon oi oi-box" aria-hidden="true"></span>
+            <span class="material-nav-label">Productos</span>
+        </NavLink>
+        <NavLink class="material-nav-item" href="proveedores">
+            <span class="material-nav-icon oi oi-people" aria-hidden="true"></span>
+            <span class="material-nav-label">Proveedores</span>
+        </NavLink>
+        <NavLink class="material-nav-item" href="empresas">
+            <span class="material-nav-icon oi oi-basket" aria-hidden="true"></span>
+            <span class="material-nav-label">Empresas</span>
+        </NavLink>
     </nav>
 </div>
 
 @code {
-    private bool collapseNavMenu = true;
+    private HashSet<string> _expandedMenus = new HashSet<string>();
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
+    private void ToggleSubmenu(string menuKey)
     {
-        collapseNavMenu = !collapseNavMenu;
+        if (_expandedMenus.Contains(menuKey))
+        {
+            _expandedMenus.Remove(menuKey);
+        }
+        else
+        {
+            _expandedMenus.Add(menuKey);
+        }
     }
 }

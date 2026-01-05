@@ -1,0 +1,486 @@
+@page "/tipos-comprobantes"
+@using Microsoft.AspNetCore.Components.Web
+@using BlazorVentas.Data
+@inject CommerceService Commerce
+@inject IJSRuntime JSRuntime
+@inject BlazorVentas.Services.SessionService SessionService
+@implements IDisposable
+
+<PageTitle>ABM Tipos Comprobantes</PageTitle>
+
+<style>
+    .card-header h5 {
+        font-size: 0.875rem;
+    }
+    
+    .tipos-table {
+        margin: 0;
+    }
+    .tipos-table th {
+        font-size: 0.8125rem;
+    }
+    .tipos-table tbody tr {
+        height: 40px !important;
+    }
+    .tipos-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa !important;
+    }
+    .tipos-table tbody tr:nth-child(odd) {
+        background-color: #ffffff !important;
+    }
+    .tipos-table tbody tr:hover {
+        background-color: #e9ecef !important;
+    }
+    .tipos-table tbody tr.table-active {
+        background-color: #cfe2ff !important;
+    }
+    .tipos-table tbody td {
+        padding: 0.3rem 0.5rem !important;
+        vertical-align: middle !important;
+    }
+    
+    /* Tipo Cell */
+    .tipo-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .tipo-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    .tipo-name {
+        font-weight: 600;
+        color: #3c4858;
+        text-decoration: none;
+    }
+    .tipo-name:hover {
+        color: #7c3aed;
+    }
+    
+    /* Action Buttons */
+    .action-btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin: 0 2px;
+    }
+    .action-btn-view {
+        background-color: #dbeafe;
+        color: #1e40af;
+    }
+    .action-btn-view:hover {
+        background-color: #bfdbfe;
+    }
+    .action-btn-edit {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+    .action-btn-edit:hover {
+        background-color: #fde68a;
+    }
+    .action-btn-delete {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+    .action-btn-delete:hover {
+        background-color: #fecaca;
+    }
+    
+    /* Search */
+    .search-box {
+        position: relative;
+    }
+    .search-box input {
+        padding-left: 2.5rem;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        font-size: 0.875rem;
+        height: 38px;
+        width: 250px;
+    }
+    .search-box input:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    .search-box .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+    }
+    
+    /* Modal Styles */
+    .modal-header {
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        color: white;
+        border-radius: 8px 8px 0 0;
+    }
+    .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+    .modal-content {
+        border: none;
+        border-radius: 8px;
+    }
+    .form-label {
+        font-weight: 500;
+        color: #4b5563;
+        font-size: 0.875rem;
+    }
+    .form-control {
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+    .form-control:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    .empty-state-icon {
+        font-size: 4rem;
+        color: #d1d5db;
+        margin-bottom: 1rem;
+    }
+    .empty-state-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #4b5563;
+        margin-bottom: 0.5rem;
+    }
+    .empty-state-text {
+        color: #9ca3af;
+        margin-bottom: 1.5rem;
+    }
+</style>
+
+<!-- Header -->
+<div class="card shadow-sm">
+    <div class="card-header py-2">
+        <h5 class="mb-0">
+            <span class="oi oi-document me-2"></span>ABM Tipos Comprobantes
+        </h5>
+    </div>
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <div class="search-box">
+                    <span class="search-icon oi oi-magnifying-glass"></span>
+                    <input type="text" class="form-control" placeholder="Buscar tipos de comprobantes..." 
+                           @bind="_searchText" @bind:event="oninput" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tipos Table -->
+<div class="card shadow-sm mt-3" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+    <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <h5 class="mb-0">Listado de Tipos Comprobantes</h5>
+        <button class="btn btn-sm btn-primary" @onclick="OpenAddModal">
+            <span class="oi oi-plus"></span> Agregar Tipo
+        </button>
+    </div>
+    @if (_loading)
+    {
+        <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (!FilteredTipos.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-state-icon">📄</div>
+            <div class="empty-state-title">No se encontraron tipos de comprobantes</div>
+            <div class="empty-state-text">Intenta ajustar los filtros o agregar un nuevo tipo.</div>
+            <button class="btn btn-primary" @onclick="OpenAddModal">
+                <span class="oi oi-plus"></span> Agregar Tipo
+            </button>
+        </div>
+    }
+    else
+    {
+        <div style="flex: 1; overflow: auto;">
+            <table class="table table-hover tipos-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 70%;">Nombre</th>
+                        <th style="width: 30%;" class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tipo in FilteredTipos)
+                    {
+                        <tr class="@(tipo.Id == _selectedTipoId ? "table-active" : "")" 
+                            @onclick="() => SelectTipo(tipo.Id)">
+                            <td>
+                                <div class="tipo-cell">
+                                    <div class="tipo-avatar">
+                                        @GetInitials(tipo.Nombre)
+                                    </div>
+                                    <div class="tipo-name">@tipo.Nombre</div>
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <button class="action-btn action-btn-view" @onclick:stopPropagation="true" 
+                                        @onclick="() => OpenViewModal(tipo)">
+                                    <span class="oi oi-eye"></span> Ver
+                                </button>
+                                <button class="action-btn action-btn-edit" @onclick:stopPropagation="true" 
+                                        @onclick="() => OpenEditModal(tipo)">
+                                    <span class="oi oi-pencil"></span> Editar
+                                </button>
+                                <button class="action-btn action-btn-delete" @onclick:stopPropagation="true" 
+                                        @onclick="() => OpenDeleteModal(tipo)">
+                                    <span class="oi oi-trash"></span> Eliminar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Add/Edit Modal -->
+@if (_showAddEditModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        @(_editingTipo.Id == 0 ? "Agregar Tipo Comprobante" : "Editar Tipo Comprobante")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseAddEditModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_editingTipo" OnValidSubmit="SaveTipo">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nombre <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="_editingTipo.Nombre" />
+                            <ValidationMessage For="@(() => _editingTipo.Nombre)" />
+                        </div>
+                        
+                        <div class="modal-footer mt-4">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseAddEditModal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Guardar</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- View Modal -->
+@if (_showViewModal && _viewingTipo != null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ver Tipo Comprobante</h5>
+                    <button type="button" class="btn-close" @onclick="CloseViewModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Nombre</label>
+                        <div class="form-control-plaintext">@_viewingTipo.Nombre</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseViewModal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" @onclick="() => { CloseViewModal(); OpenEditModal(_viewingTipo); }">
+                        <span class="oi oi-pencil"></span> Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Delete Modal -->
+@if (_showDeleteModal && _deletingTipo != null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger">
+                    <h5 class="modal-title">Eliminar Tipo Comprobante</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea eliminar el tipo de comprobante <strong>@_deletingTipo.Nombre</strong>?</p>
+                    <p class="text-danger"><small>Esta acción no se puede deshacer.</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteTipo">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<TipoComprobanteItem> _tipos = new();
+    private bool _loading = true;
+    private string _searchText = string.Empty;
+    private int _selectedTipoId = 0;
+    
+    // Modals
+    private bool _showAddEditModal = false;
+    private bool _showViewModal = false;
+    private bool _showDeleteModal = false;
+    private TipoComprobanteItem _editingTipo = new();
+    private TipoComprobanteItem? _viewingTipo = null;
+    private TipoComprobanteItem? _deletingTipo = null;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+    
+    private async Task LoadDataAsync()
+    {
+        _loading = true;
+        try
+        {
+            _tipos = await Commerce.GetTiposComprobanteAsync();
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+    
+    private IEnumerable<TipoComprobanteItem> FilteredTipos
+    {
+        get
+        {
+            var query = _tipos.AsEnumerable();
+            
+            if (!string.IsNullOrWhiteSpace(_searchText))
+            {
+                var searchLower = _searchText.ToLower();
+                query = query.Where(t => t.Nombre.ToLower().Contains(searchLower));
+            }
+            
+            return query.OrderBy(t => t.Nombre);
+        }
+    }
+    
+    private string GetInitials(string nombre)
+    {
+        if (string.IsNullOrEmpty(nombre)) return "??";
+        var parts = nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        return nombre.Length >= 2 ? nombre.Substring(0, 2).ToUpper() : nombre.ToUpper();
+    }
+    
+    private void SelectTipo(int id)
+    {
+        _selectedTipoId = _selectedTipoId == id ? 0 : id;
+        StateHasChanged();
+    }
+    
+    private void OpenAddModal()
+    {
+        _editingTipo = new TipoComprobanteItem();
+        _showAddEditModal = true;
+    }
+    
+    private void OpenEditModal(TipoComprobanteItem tipo)
+    {
+        _editingTipo = new TipoComprobanteItem
+        {
+            Id = tipo.Id,
+            Nombre = tipo.Nombre
+        };
+        _showAddEditModal = true;
+    }
+    
+    private void CloseAddEditModal()
+    {
+        _showAddEditModal = false;
+        _editingTipo = new TipoComprobanteItem();
+    }
+    
+    private async Task SaveTipo()
+    {
+        var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+        var usuarioId = token != null ? await SessionService.GetUsuarioIdAsync(token) : null;
+        await Commerce.SaveTipoComprobanteAsync(_editingTipo, usuarioId);
+        await LoadDataAsync();
+        CloseAddEditModal();
+    }
+    
+    private void OpenViewModal(TipoComprobanteItem tipo)
+    {
+        _viewingTipo = tipo;
+        _showViewModal = true;
+    }
+    
+    private void CloseViewModal()
+    {
+        _showViewModal = false;
+        _viewingTipo = null;
+    }
+    
+    private void OpenDeleteModal(TipoComprobanteItem tipo)
+    {
+        _deletingTipo = tipo;
+        _showDeleteModal = true;
+    }
+    
+    private void CloseDeleteModal()
+    {
+        _showDeleteModal = false;
+        _deletingTipo = null;
+    }
+    
+    private async Task DeleteTipo()
+    {
+        if (_deletingTipo != null)
+        {
+            var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+            var usuarioId = token != null ? await SessionService.GetUsuarioIdAsync(token) : null;
+            await Commerce.DeleteTipoComprobanteAsync(_deletingTipo.Id, usuarioId);
+            await LoadDataAsync();
+            CloseDeleteModal();
+        }
+    }
+    
+    public void Dispose()
+    {
+        // Cleanup if needed
+    }
+}
+

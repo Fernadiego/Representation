@@ -1,0 +1,304 @@
+@page "/login"
+@inject BlazorVentas.Services.AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Iniciar Sesión</PageTitle>
+
+<style>
+    .login-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 0;
+        margin: 0;
+        z-index: 9999;
+    }
+
+    .login-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 3rem;
+        width: 100%;
+        max-width: 420px;
+        animation: slideUp 0.5s ease-out;
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .login-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1a202c;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+
+    .login-message {
+        color: #10b981;
+        font-size: 0.875rem;
+        text-align: center;
+        margin-bottom: 2rem;
+        min-height: 1.5rem;
+    }
+
+    .input-group {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+        font-size: 1.125rem;
+        z-index: 1;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.875rem 1rem 0.875rem 3rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.9375rem;
+        transition: all 0.2s ease;
+        background-color: #f9fafb;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #667eea;
+        background-color: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-input::placeholder {
+        color: #9ca3af;
+    }
+
+    .login-button {
+        width: 100%;
+        padding: 0.875rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-top: 0.5rem;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .login-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+    }
+
+    .login-button:active {
+        transform: translateY(0);
+    }
+
+    .login-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .forgot-password {
+        text-align: center;
+        margin-top: 1.5rem;
+    }
+
+    .forgot-password-link {
+        color: #667eea;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: color 0.2s ease;
+    }
+
+    .forgot-password-link:hover {
+        color: #764ba2;
+        text-decoration: underline;
+    }
+
+    .error-message {
+        color: #ef4444;
+        font-size: 0.875rem;
+        text-align: center;
+        margin-top: 1rem;
+        padding: 0.75rem;
+        background-color: #fef2f2;
+        border-radius: 6px;
+        border: 1px solid #fecaca;
+    }
+
+    .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-card">
+        <h1 class="login-title">Iniciar Sesión</h1>
+        <div class="login-message">
+            @if (!string.IsNullOrEmpty(_message))
+            {
+                <span style="color: @(_isError ? "#ef4444" : "#10b981")">@_message</span>
+            }
+        </div>
+
+        <EditForm Model="_loginModel" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+            
+            <div class="input-group">
+                <span class="input-icon oi oi-person"></span>
+                <InputText class="form-input" @bind-Value="_loginModel.EmailOrLogin" 
+                          placeholder="Email o usuario" />
+            </div>
+
+            <div class="input-group">
+                <span class="input-icon oi oi-lock-locked"></span>
+                <InputText type="password" class="form-input" @bind-Value="_loginModel.Password" 
+                          placeholder="Contraseña" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="error-message">@_errorMessage</div>
+            }
+
+            <button type="submit" class="login-button" disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span class="spinner"></span>
+                }
+                else
+                {
+                    <span>Iniciar Sesión</span>
+                }
+            </button>
+        </EditForm>
+
+        <div class="forgot-password">
+            <a href="#" class="forgot-password-link" @onclick:preventDefault>¿Olvidaste tu contraseña?</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel _loginModel = new();
+    private string? _errorMessage;
+    private string? _message;
+    private bool _isError = false;
+    private bool _isLoading = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Verificar si hay token válido
+            try
+            {
+                var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+                if (!string.IsNullOrEmpty(token))
+                {
+                    var isValid = await AuthService.ValidateTokenAsync(token);
+                    if (isValid)
+                    {
+                        Navigation.NavigateTo("/");
+                        return;
+                    }
+                    else
+                    {
+                        // Token inválido, limpiar
+                        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
+                    }
+                }
+            }
+            catch
+            {
+                // Ignorar errores
+            }
+        }
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleLogin()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+        _message = null;
+        StateHasChanged();
+
+        try
+        {
+            var token = await AuthService.LoginAsync(_loginModel.EmailOrLogin, _loginModel.Password);
+            
+            if (!string.IsNullOrEmpty(token))
+            {
+                // Guardar token en localStorage
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", token);
+                
+                _message = "¡Inicio de sesión exitoso! Redirigiendo...";
+                _isError = false;
+                StateHasChanged();
+                
+                await Task.Delay(500);
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                _errorMessage = "Email/usuario o contraseña inválidos";
+                _isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+            _isError = true;
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private class LoginModel
+    {
+        public string EmailOrLogin { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}
+

@@ -1,0 +1,1252 @@
+@page "/abm-articulos"
+@using Microsoft.AspNetCore.Components.Web
+@using BlazorVentas.Data
+@inject CommerceService Commerce
+@inject TenantState TenantState
+@inject IJSRuntime JSRuntime
+@inject BlazorVentas.Services.ImageService ImageService
+@inject BlazorVentas.Services.SessionService SessionService
+@implements IDisposable
+
+<PageTitle>ABM Artículos</PageTitle>
+
+<style>
+    .card-header h5 {
+        font-size: 0.875rem;
+    }
+    
+    .filter-label {
+        font-size: 0.8125rem;
+        color: #6c757d;
+        margin-right: 0.5rem;
+    }
+    .filter-select {
+        font-size: 0.875rem;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        padding: 0.375rem 2rem 0.375rem 0.75rem;
+        background-color: white;
+        min-width: 140px;
+    }
+    .filter-select:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    
+    
+    .products-table {
+        margin: 0;
+    }
+    .products-table th {
+        font-size: 0.8125rem;
+    }
+    .products-table tbody tr {
+        height: 40px !important;
+    }
+    .products-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa !important;
+    }
+    .products-table tbody tr:nth-child(odd) {
+        background-color: #ffffff !important;
+    }
+    .products-table tbody tr:hover {
+        background-color: #e9ecef !important;
+    }
+    .products-table tbody tr.table-active {
+        background-color: #cfe2ff !important;
+    }
+    .products-table tbody td {
+        padding: 0.3rem 0.5rem !important;
+        vertical-align: middle !important;
+    }
+    
+    /* Product Cell */
+    .product-cell {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .product-img {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        object-fit: cover;
+        background-color: #f1f3f5;
+    }
+    .product-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .product-name {
+        font-weight: 600;
+        color: #3c4858;
+        text-decoration: none;
+        margin-bottom: 2px;
+    }
+    .product-name:hover {
+        color: #7c3aed;
+    }
+    .product-supplier {
+        font-size: 0.75rem;
+        color: #9ca3af;
+    }
+    
+    /* SKU */
+    .sku-badge {
+        font-family: 'Monaco', 'Consolas', monospace;
+        font-size: 0.8125rem;
+        color: #6c757d;
+        background-color: #f1f3f5;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+    
+    /* Category Badge */
+    .category-badge {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        background-color: #e0e7ff;
+        color: #4338ca;
+    }
+    
+    /* Stock */
+    .stock-low {
+        color: #dc3545;
+        font-weight: 600;
+    }
+    .stock-medium {
+        color: #f59e0b;
+        font-weight: 600;
+    }
+    .stock-high {
+        color: #10b981;
+        font-weight: 600;
+    }
+    
+    /* Price */
+    .price-value {
+        font-weight: 600;
+        color: #3c4858;
+    }
+    
+    /* Status Badges */
+    .status-badge {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    .status-badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+    .status-active {
+        background-color: #d1fae5;
+        color: #059669;
+    }
+    .status-active::before {
+        background-color: #10b981;
+    }
+    .status-pending {
+        background-color: #fef3c7;
+        color: #d97706;
+    }
+    .status-pending::before {
+        background-color: #f59e0b;
+    }
+    .status-inactive {
+        background-color: #fee2e2;
+        color: #dc2626;
+    }
+    .status-inactive::before {
+        background-color: #ef4444;
+    }
+    
+    /* Actions */
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: #6c757d;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .action-btn:hover {
+        background-color: #f1f3f5;
+    }
+    .action-btn.edit:hover {
+        color: #7c3aed;
+        background-color: #ede9fe;
+    }
+    .action-btn.delete:hover {
+        color: #dc3545;
+        background-color: #fee2e2;
+    }
+    .action-btn.view:hover {
+        color: #3b82f6;
+        background-color: #dbeafe;
+    }
+    
+    /* Checkbox */
+    .product-checkbox {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        cursor: pointer;
+        accent-color: #7c3aed;
+    }
+    
+    /* Pagination */
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-top: 1px solid #e9ecef;
+    }
+    .pagination-info {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .pagination-buttons {
+        display: flex;
+        gap: 0.25rem;
+    }
+    .page-btn {
+        min-width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #dee2e6;
+        background: white;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .page-btn:hover:not(.active):not(:disabled) {
+        background-color: #f8f9fa;
+        border-color: #7c3aed;
+        color: #7c3aed;
+    }
+    .page-btn.active {
+        background: #7c3aed;
+        border-color: #7c3aed;
+        color: white;
+    }
+    .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    /* Search */
+    .search-box {
+        position: relative;
+    }
+    .search-box input {
+        padding-left: 2.5rem;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        font-size: 0.875rem;
+        height: 38px;
+        width: 250px;
+    }
+    .search-box input:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    .search-box .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+    }
+    
+    /* Modal Styles */
+    .modal-header {
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        color: white;
+        border-radius: 8px 8px 0 0;
+    }
+    .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+    .modal-content {
+        border: none;
+        border-radius: 8px;
+    }
+    .form-label {
+        font-weight: 500;
+        color: #4b5563;
+        font-size: 0.875rem;
+    }
+    .form-control, .form-select {
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    .empty-state-icon {
+        font-size: 4rem;
+        color: #d1d5db;
+        margin-bottom: 1rem;
+    }
+    .empty-state-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #4b5563;
+        margin-bottom: 0.5rem;
+    }
+    .empty-state-text {
+        color: #9ca3af;
+        margin-bottom: 1.5rem;
+    }
+</style>
+
+<!-- Filters -->
+    <div class="card shadow-sm">
+        <div class="card-header py-2">
+            <h5 class="mb-0">
+                <span class="oi oi-box me-2"></span>ABM Artículos
+            </h5>
+        </div>
+        <div class="card-body py-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                <span class="filter-label">Filtrar por:</span>
+                
+                <select class="filter-select" @bind="_filterCategoria">
+                    <option value="">Todas las Categorías</option>
+                    @foreach (var cat in _categorias)
+                    {
+                        <option value="@cat">@cat</option>
+                    }
+                </select>
+                
+                <select class="filter-select" @bind="_filterEstado">
+                    <option value="">Todos los Estados</option>
+                    <option value="active">Activo</option>
+                    <option value="pending">Pendiente</option>
+                    <option value="inactive">Inactivo</option>
+                </select>
+                
+                <select class="filter-select" @bind="_filterPrecio">
+                    <option value="">Todos los Precios</option>
+                    <option value="0-50">$0 - $50</option>
+                    <option value="51-150">$51 - $150</option>
+                    <option value="151-500">$151 - $500</option>
+                    <option value="500+">$500+</option>
+                </select>
+                
+                <div class="search-box">
+                    <span class="search-icon oi oi-magnifying-glass"></span>
+                    <input type="text" class="form-control" placeholder="Buscar artículos..." 
+                           @bind="_searchText" @bind:event="oninput" />
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Products Table -->
+    <div class="card shadow-sm mt-3" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <h5 class="mb-0">Listado de Artículos</h5>
+            <button class="btn btn-sm btn-primary" @onclick="OpenAddModal">
+                <span class="oi oi-plus"></span> Agregar Artículo
+            </button>
+        </div>
+        @if (_loading)
+        {
+            <div class="d-flex justify-content-center align-items-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        }
+        else if (!FilteredProducts.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <span class="oi oi-box"></span>
+                </div>
+                <h3 class="empty-state-title">No hay artículos</h3>
+                <p class="empty-state-text">Comienza agregando tu primer artículo al catálogo.</p>
+                <button class="btn btn-sm btn-primary" @onclick="OpenAddModal">
+                    <span class="oi oi-plus"></span> Agregar Artículo
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0 products-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" class="product-checkbox" 
+                                       @bind="_selectAll" @bind:after="ToggleSelectAll" />
+                            </th>
+                            <th>Producto</th>
+                            <th>SKU</th>
+                            <th>Categoría</th>
+                            <th>Stock</th>
+                            <th>Precio</th>
+                            <th>Proveedor</th>
+                            <th>Estado</th>
+                            <th style="width: 120px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var product in PaginatedProducts)
+                        {
+                            <tr>
+                                <td>
+                                    <input type="checkbox" class="product-checkbox" 
+                                           checked="@_selectedProducts.Contains(product.Id)"
+                                           @onchange="() => ToggleProductSelection(product.Id)" />
+                                </td>
+                                <td>
+                                    <div class="product-cell">
+                                        <img src="@GetProductImage(product)" alt="@product.Name" class="product-img" 
+                                             onerror="this.src='/favicon.png'" />
+                                        <div class="product-info">
+                                            <a href="#" class="product-name" @onclick:preventDefault @onclick="() => OpenEditModal(product)">@product.Name</a>
+                                            <span class="product-supplier">@(product.Category ?? "Sin categoría")</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="sku-badge">@(product.Sku ?? $"SKU-{product.Id:D5}")</span>
+                                </td>
+                                <td>
+                                    <span class="category-badge">@(product.Category ?? "General")</span>
+                                </td>
+                                <td>
+                                    <span class="@GetStockClass(product.Stock)">@product.Stock</span>
+                                </td>
+                                <td>
+                                    <span class="price-value">@product.UnitPrice.ToString("C")</span>
+                                </td>
+                                <td>
+                                    @(product.Supplier?.Name ?? "—")
+                                </td>
+                                <td>
+                                    <span class="status-badge @GetStatusClass(product)">
+                                        @GetStatusText(product)
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="action-btn view" title="Ver detalles" @onclick="() => OpenViewModal(product)">
+                                        <span class="oi oi-eye"></span>
+                                    </button>
+                                    <button class="action-btn edit" title="Editar" @onclick="() => OpenEditModal(product)">
+                                        <span class="oi oi-pencil"></span>
+                                    </button>
+                                    <button class="action-btn delete" title="Eliminar" @onclick="() => ConfirmDelete(product)">
+                                        <span class="oi oi-trash"></span>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Mostrando @((_currentPage - 1) * _pageSize + 1) a @Math.Min(_currentPage * _pageSize, FilteredProducts.Count()) de @FilteredProducts.Count() artículos
+                </div>
+                <div class="pagination-buttons">
+                    <button class="page-btn" disabled="@(_currentPage == 1)" @onclick="() => GoToPage(_currentPage - 1)">
+                        <span class="oi oi-chevron-left"></span>
+                    </button>
+                    @for (int i = 1; i <= TotalPages; i++)
+                    {
+                        var pageNum = i;
+                        <button class="page-btn @(pageNum == _currentPage ? "active" : "")" @onclick="() => GoToPage(pageNum)">
+                            @pageNum
+                        </button>
+                    }
+                    <button class="page-btn" disabled="@(_currentPage == TotalPages)" @onclick="() => GoToPage(_currentPage + 1)">
+                        <span class="oi oi-chevron-right"></span>
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+
+<!-- Modal Agregar/Editar -->
+@if (_showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <span class="oi @(_isEditing ? "oi-pencil" : "oi-plus") me-2"></span>
+                        @(_isEditing ? "Editar Artículo" : "Nuevo Artículo")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    <!-- Sección: Datos Básicos -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-tag me-2"></span>Datos Básicos</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">Código Artículo *</label>
+                            <input type="number" class="form-control" @bind="_editProduct.CodigoArticulo" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Código para Mostrar</label>
+                            <input type="number" class="form-control" @bind="_editProduct.CodigoParaMostrar" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Descripción *</label>
+                            <input type="text" class="form-control" @bind="_editProduct.Name" placeholder="Descripción del artículo" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Marca</label>
+                            <select class="form-select" value="@(_editProduct.MarcaId?.ToString() ?? "")" 
+                                    @onchange="OnMarcaChanged">
+                                <option value="">Seleccionar marca</option>
+                                @foreach (var marca in _marcas)
+                                {
+                                    <option value="@marca.Id">@marca.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Origen (País)</label>
+                            <select class="form-select" value="@(_editProduct.OrigenId?.ToString() ?? "")" 
+                                    @onchange="OnOrigenChanged">
+                                <option value="">Seleccionar país</option>
+                                @foreach (var pais in _paises)
+                                {
+                                    <option value="@pais.Id">@pais.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Tipo Envase</label>
+                            <select class="form-select" value="@(_editProduct.TipoEnvaseId?.ToString() ?? "")" 
+                                    @onchange="OnTipoEnvaseChanged">
+                                <option value="">Seleccionar tipo</option>
+                                @foreach (var tipo in _tiposEnvase)
+                                {
+                                    <option value="@tipo.Id">@tipo.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Sección: Pesos y Códigos -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-aperture me-2"></span>Pesos y Códigos de Barras</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">Peso Neto</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editProduct.PesoNeto" step="0.01" />
+                                <span class="input-group-text">gr</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Peso Escurrido</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editProduct.PesoEscurrido" step="0.01" />
+                                <span class="input-group-text">gr</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Unidad x Bulto</label>
+                            <input type="number" class="form-control" @bind="_editProduct.UnidadXBulto" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">EAN13</label>
+                            <input type="number" class="form-control" @bind="_editProduct.EAUN13" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">DUN14</label>
+                            <input type="number" class="form-control" @bind="_editProduct.DUN14" />
+                        </div>
+                    </div>
+
+                    <!-- Sección: Precios -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-dollar me-2"></span>Listas de Precios</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">Precio Lista 1</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" @bind="_editProduct.PrecioLista1" step="0.01" />
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Precio Lista 2</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" @bind="_editProduct.PrecioLista2" step="0.01" />
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Precio Lista 3</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" @bind="_editProduct.PrecioLista3" step="0.01" />
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Precio Lista 4</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" @bind="_editProduct.PrecioLista4" step="0.01" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección: Tamaño Unidad -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-box me-2"></span>Tamaño Unidad (cm)</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Alto</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editProduct.TamañoUnidadAlto" step="0.01" />
+                                <span class="input-group-text">cm</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ancho</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editProduct.TamañoUnidadAncho" step="0.01" />
+                                <span class="input-group-text">cm</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Profundo</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editProduct.TamañoUnidadProfundo" step="0.01" />
+                                <span class="input-group-text">cm</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección: Tamaño Bulto -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-layers me-2"></span>Tamaño Bulto (cm)</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Alto</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editProduct.TamañoBultoAlto" step="0.01" />
+                                <span class="input-group-text">cm</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ancho</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editProduct.TamañoBultoAncho" step="0.01" />
+                                <span class="input-group-text">cm</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Profundo</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editProduct.TamañoBultoProfundo" step="0.01" />
+                                <span class="input-group-text">cm</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección: Tamaño Palet -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-grid-three-up me-2"></span>Tamaño Palet (cm)</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Alto</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editProduct.TamañoPaletAlto" step="0.01" />
+                                <span class="input-group-text">cm</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ancho</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editProduct.TamañoPaletAncho" step="0.01" />
+                                <span class="input-group-text">cm</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Profundo</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editProduct.TamañoPaletProfundo" step="0.01" />
+                                <span class="input-group-text">cm</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección: Pesos y Bultos -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-target me-2"></span>Pesos Adicionales y Bultos</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">Peso Bulto</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editProduct.PesoBulto" step="0.01" />
+                                <span class="input-group-text">kg</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Peso Palet</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editProduct.PesoPalet" step="0.01" />
+                                <span class="input-group-text">kg</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Bultos x Camada</label>
+                            <input type="number" class="form-control" @bind="_editProduct.BultosXCamada" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Bultos x Palet</label>
+                            <input type="number" class="form-control" @bind="_editProduct.BultosXPalet" />
+                        </div>
+                    </div>
+
+                    <!-- Sección: Estado y Mensaje -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-info me-2"></span>Estado y Observaciones</h6>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="form-check form-switch mt-4">
+                                <input class="form-check-input" type="checkbox" id="inhabilitado" @bind="_editProduct.Inhabilitado" />
+                                <label class="form-check-label" for="inhabilitado">Inhabilitado</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check form-switch mt-4">
+                                <input class="form-check-input" type="checkbox" id="tieneMensaje" @bind="_editProduct.TieneMensaje" />
+                                <label class="form-check-label" for="tieneMensaje">Tiene Mensaje</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Mensaje sobre Artículo</label>
+                            <input type="text" class="form-control" @bind="_editProduct.MensajeSobreArticulo" 
+                                   placeholder="Mensaje o nota sobre el artículo" disabled="@(!_editProduct.TieneMensaje)" />
+                        </div>
+                    </div>
+                    
+                    @if (!string.IsNullOrWhiteSpace(_modalError))
+                    {
+                        <div class="alert alert-danger mt-3 mb-0">@_modalError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveProduct">
+                        <span class="oi oi-check me-1"></span>
+                        @(_isEditing ? "Guardar Cambios" : "Crear Artículo")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Ver Detalles -->
+@if (_showViewModal && _viewProduct != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <span class="oi oi-eye me-2"></span>Detalles del Artículo
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="() => _showViewModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <img src="@GetProductImage(_viewProduct)" alt="@_viewProduct.Name" 
+                             style="width: 120px; height: 120px; border-radius: 12px; object-fit: cover;" />
+                    </div>
+                    <h4 class="text-center mb-4">@_viewProduct.Name</h4>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <strong class="text-muted">SKU:</strong><br/>
+                            @(_viewProduct.Sku ?? $"SKU-{_viewProduct.Id:D5}")
+                        </div>
+                        <div class="col-6">
+                            <strong class="text-muted">Categoría:</strong><br/>
+                            @(_viewProduct.Category ?? "General")
+                        </div>
+                        <div class="col-6">
+                            <strong class="text-muted">Precio:</strong><br/>
+                            <span class="fs-5 fw-bold text-success">@_viewProduct.UnitPrice.ToString("C")</span>
+                        </div>
+                        <div class="col-6">
+                            <strong class="text-muted">Stock:</strong><br/>
+                            <span class="@GetStockClass(_viewProduct.Stock)">@_viewProduct.Stock unidades</span>
+                        </div>
+                        <div class="col-6">
+                            <strong class="text-muted">Proveedor:</strong><br/>
+                            @(_viewProduct.Supplier?.Name ?? "—")
+                        </div>
+                        <div class="col-6">
+                            <strong class="text-muted">Estado:</strong><br/>
+                            <span class="status-badge @GetStatusClass(_viewProduct)">@GetStatusText(_viewProduct)</span>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(_viewProduct.Description))
+                        {
+                            <div class="col-12">
+                                <strong class="text-muted">Descripción:</strong><br/>
+                                @_viewProduct.Description
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showViewModal = false">Cerrar</button>
+                    <button type="button" class="btn btn-primary" @onclick="() => { _showViewModal = false; OpenEditModal(_viewProduct); }">
+                        <span class="oi oi-pencil me-1"></span>Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Confirmar Eliminación -->
+@if (_showDeleteModal && _deleteProduct != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <span class="oi oi-warning me-2"></span>Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => _showDeleteModal = false"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <span class="oi oi-trash" style="font-size: 3rem; color: #dc3545;"></span>
+                    </div>
+                    <h5>¿Eliminar este artículo?</h5>
+                    <p class="text-muted mb-0">
+                        Estás por eliminar <strong>@_deleteProduct.Name</strong>.<br/>
+                        Esta acción no se puede deshacer.
+                    </p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showDeleteModal = false">Cancelar</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteProduct">
+                        <span class="oi oi-trash me-1"></span>Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private List<Product> _products = new();
+    private List<Supplier> _suppliers = new();
+    private List<string> _categorias = new();
+    
+    // Listas ABM
+    private List<MarcaItem> _marcas = new();
+    private List<PaisItem> _paises = new();
+    private List<TipoEnvaseItem> _tiposEnvase = new();
+    
+    // Filtros
+    private string _searchText = "";
+    private string _filterCategoria = "";
+    private string _filterEstado = "";
+    private string _filterPrecio = "";
+    
+    // Paginación
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+    
+    // Selección
+    private bool _selectAll = false;
+    private HashSet<int> _selectedProducts = new();
+    
+    // Modales
+    private bool _showModal = false;
+    private bool _showViewModal = false;
+    private bool _showDeleteModal = false;
+    private bool _isEditing = false;
+    private Product _editProduct = new();
+    private Product? _viewProduct;
+    private Product? _deleteProduct;
+    private string? _modalError;
+    
+    private IEnumerable<Product> FilteredProducts => _products
+        .Where(p => string.IsNullOrEmpty(_searchText) || 
+                    p.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                    (p.Sku?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false))
+        .Where(p => string.IsNullOrEmpty(_filterCategoria) || p.Category == _filterCategoria)
+        .Where(p => string.IsNullOrEmpty(_filterEstado) || GetProductStatus(p) == _filterEstado)
+        .Where(p => FilterByPrice(p));
+    
+    private IEnumerable<Product> PaginatedProducts => FilteredProducts
+        .Skip((_currentPage - 1) * _pageSize)
+        .Take(_pageSize);
+    
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(FilteredProducts.Count() / (double)_pageSize));
+
+    protected override async Task OnInitializedAsync()
+    {
+        TenantState.OnTenantChanged += HandleTenantChanged;
+        await LoadDataAsync();
+    }
+
+    public void Dispose()
+    {
+        TenantState.OnTenantChanged -= HandleTenantChanged;
+    }
+
+    private async void HandleTenantChanged(Company? company)
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadDataAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+        
+        try
+        {
+            // Cargar listas ABM (globales)
+            _marcas = await Commerce.GetMarcasAsync();
+            _paises = await Commerce.GetPaisesAsync();
+            _tiposEnvase = await Commerce.GetTiposEnvaseAsync();
+            
+            var companyId = TenantState.CurrentCompanyId;
+            if (companyId.HasValue)
+            {
+                _products = await Commerce.GetProductsAsync(companyId.Value);
+                _suppliers = await Commerce.GetSuppliersAsync(companyId.Value);
+                _categorias = _products.Where(p => !string.IsNullOrEmpty(p.Category))
+                                       .Select(p => p.Category!)
+                                       .Distinct()
+                                       .OrderBy(c => c)
+                                       .ToList();
+            }
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+    
+    private bool FilterByPrice(Product p)
+    {
+        if (string.IsNullOrEmpty(_filterPrecio)) return true;
+        return _filterPrecio switch
+        {
+            "0-50" => p.UnitPrice <= 50,
+            "51-150" => p.UnitPrice > 50 && p.UnitPrice <= 150,
+            "151-500" => p.UnitPrice > 150 && p.UnitPrice <= 500,
+            "500+" => p.UnitPrice > 500,
+            _ => true
+        };
+    }
+    
+    private string GetProductStatus(Product p)
+    {
+        if (p.Stock <= 0) return "inactive";
+        if (p.Stock <= p.MinStock) return "pending";
+        return "active";
+    }
+    
+    private string GetProductImage(Product product)
+    {
+        if (!string.IsNullOrEmpty(product.ImagePath))
+            return product.ImagePath;
+        return ImageService.GetDefaultImagePath(product.Id);
+    }
+    
+    private string GetStockClass(int stock)
+    {
+        if (stock <= 0) return "stock-low";
+        if (stock <= 10) return "stock-medium";
+        return "stock-high";
+    }
+    
+    private string GetStatusClass(Product p)
+    {
+        return GetProductStatus(p) switch
+        {
+            "active" => "status-active",
+            "pending" => "status-pending",
+            "inactive" => "status-inactive",
+            _ => "status-active"
+        };
+    }
+    
+    private string GetStatusText(Product p)
+    {
+        return GetProductStatus(p) switch
+        {
+            "active" => "Activo",
+            "pending" => "Stock Bajo",
+            "inactive" => "Sin Stock",
+            _ => "Activo"
+        };
+    }
+    
+    private void GoToPage(int page)
+    {
+        _currentPage = Math.Max(1, Math.Min(page, TotalPages));
+    }
+    
+    private void ToggleSelectAll()
+    {
+        if (_selectAll)
+        {
+            _selectedProducts = FilteredProducts.Select(p => p.Id).ToHashSet();
+        }
+        else
+        {
+            _selectedProducts.Clear();
+        }
+    }
+    
+    private void ToggleProductSelection(int productId)
+    {
+        if (_selectedProducts.Contains(productId))
+            _selectedProducts.Remove(productId);
+        else
+            _selectedProducts.Add(productId);
+        
+        _selectAll = FilteredProducts.All(p => _selectedProducts.Contains(p.Id));
+    }
+    
+    private void OpenAddModal()
+    {
+        _isEditing = false;
+        // Generar el próximo código de artículo
+        var nextCodigo = _products.Any() ? _products.Max(p => p.CodigoArticulo) + 1 : 1;
+        _editProduct = new Product
+        {
+            CompanyId = TenantState.CurrentCompanyId ?? 0,
+            CodigoArticulo = nextCodigo,
+            CodigoParaMostrar = nextCodigo,
+            Stock = 0,
+            MinStock = 5,
+            SupplierId = null
+        };
+        _modalError = null;
+        _showModal = true;
+    }
+    
+    private void OpenEditModal(Product product)
+    {
+        _isEditing = true;
+        _editProduct = new Product
+        {
+            Id = product.Id,
+            CompanyId = product.CompanyId,
+            CodigoArticulo = product.CodigoArticulo,
+            CodigoParaMostrar = product.CodigoParaMostrar,
+            Name = product.Name,
+            Sku = product.Sku,
+            Category = product.Category,
+            Description = product.Description,
+            UnitPrice = product.UnitPrice,
+            Stock = product.Stock,
+            MinStock = product.MinStock,
+            SupplierId = product.SupplierId,
+            MarcaId = product.MarcaId,
+            MarcaNombre = product.MarcaNombre,
+            OrigenId = product.OrigenId,
+            OrigenNombre = product.OrigenNombre,
+            PesoNeto = product.PesoNeto,
+            PesoEscurrido = product.PesoEscurrido,
+            TipoEnvaseId = product.TipoEnvaseId,
+            TipoEnvaseNombre = product.TipoEnvaseNombre,
+            UnidadXBulto = product.UnidadXBulto,
+            EAUN13 = product.EAUN13,
+            DUN14 = product.DUN14,
+            PrecioLista1 = product.PrecioLista1,
+            PrecioLista2 = product.PrecioLista2,
+            PrecioLista3 = product.PrecioLista3,
+            PrecioLista4 = product.PrecioLista4,
+            TamañoUnidadAlto = product.TamañoUnidadAlto,
+            TamañoUnidadAncho = product.TamañoUnidadAncho,
+            TamañoUnidadProfundo = product.TamañoUnidadProfundo,
+            TamañoBultoAlto = product.TamañoBultoAlto,
+            TamañoBultoAncho = product.TamañoBultoAncho,
+            TamañoBultoProfundo = product.TamañoBultoProfundo,
+            TamañoPaletAlto = product.TamañoPaletAlto,
+            TamañoPaletAncho = product.TamañoPaletAncho,
+            TamañoPaletProfundo = product.TamañoPaletProfundo,
+            PesoBulto = product.PesoBulto,
+            PesoPalet = product.PesoPalet,
+            BultosXCamada = product.BultosXCamada,
+            BultosXPalet = product.BultosXPalet,
+            Inhabilitado = product.Inhabilitado,
+            MensajeSobreArticulo = product.MensajeSobreArticulo,
+            TieneMensaje = product.TieneMensaje,
+            ImagePath = product.ImagePath
+        };
+        _modalError = null;
+        _showModal = true;
+    }
+    
+    private void OnMarcaChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
+        {
+            _editProduct.MarcaId = id;
+            _editProduct.MarcaNombre = _marcas.FirstOrDefault(m => m.Id == id)?.Nombre;
+        }
+        else
+        {
+            _editProduct.MarcaId = null;
+            _editProduct.MarcaNombre = null;
+        }
+    }
+    
+    private void OnOrigenChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
+        {
+            _editProduct.OrigenId = id;
+            _editProduct.OrigenNombre = _paises.FirstOrDefault(p => p.Id == id)?.Nombre;
+        }
+        else
+        {
+            _editProduct.OrigenId = null;
+            _editProduct.OrigenNombre = null;
+        }
+    }
+    
+    private void OnTipoEnvaseChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
+        {
+            _editProduct.TipoEnvaseId = id;
+            _editProduct.TipoEnvaseNombre = _tiposEnvase.FirstOrDefault(t => t.Id == id)?.Nombre;
+        }
+        else
+        {
+            _editProduct.TipoEnvaseId = null;
+            _editProduct.TipoEnvaseNombre = null;
+        }
+    }
+    
+    private void OpenViewModal(Product product)
+    {
+        _viewProduct = product;
+        _showViewModal = true;
+    }
+    
+    private void CloseModal()
+    {
+        _showModal = false;
+        _modalError = null;
+    }
+    
+    private async Task SaveProduct()
+    {
+        if (_editProduct.CodigoArticulo <= 0)
+        {
+            _modalError = "El código de artículo es requerido";
+            return;
+        }
+        
+        if (string.IsNullOrWhiteSpace(_editProduct.Name))
+        {
+            _modalError = "La descripción es requerida";
+            return;
+        }
+        
+        // Validar código único
+        if (!_isEditing && _products.Any(p => p.CodigoArticulo == _editProduct.CodigoArticulo))
+        {
+            _modalError = "Ya existe un artículo con ese código";
+            return;
+        }
+        
+        try
+        {
+            var companyId = TenantState.CurrentCompanyId;
+            if (!companyId.HasValue)
+            {
+                _modalError = "No hay empresa seleccionada";
+                return;
+            }
+            
+            _editProduct.CompanyId = companyId.Value;
+            await Commerce.SaveProductAsync(companyId.Value, _editProduct);
+            
+            await LoadDataAsync();
+            CloseModal();
+        }
+        catch (Exception ex)
+        {
+            _modalError = $"Error al guardar: {ex.Message}";
+        }
+    }
+    
+    private void ConfirmDelete(Product product)
+    {
+        _deleteProduct = product;
+        _showDeleteModal = true;
+    }
+    
+    private async Task DeleteProduct()
+    {
+        if (_deleteProduct == null) return;
+        
+        try
+        {
+            var companyId = TenantState.CurrentCompanyId;
+            if (!companyId.HasValue) return;
+            
+            var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+            var usuarioId = token != null ? await SessionService.GetUsuarioIdAsync(token) : null;
+            await Commerce.DeleteProductAsync(companyId.Value, _deleteProduct.Id, usuarioId);
+            await LoadDataAsync();
+            _showDeleteModal = false;
+            _deleteProduct = null;
+        }
+        catch
+        {
+            // Manejar error
+        }
+    }
+}
+
+
+

@@ -1,8 +1,179 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
 @inject CommerceService Commerce
 @inject TenantState TenantState
+@inject NavigationManager Navigation
 
 <PageTitle>BlazorVentas</PageTitle>
+
+<style>
+    /* Botón Empresa estilo BBVA con Popover */
+    .tenant-selector {
+        position: relative;
+        margin-left: auto;
+        margin-right: 0 !important;
+        padding-right: 0 !important;
+    }
+    
+    .btn-empresa-bbva {
+        background-color: #004481 !important;
+        border-color: #004481 !important;
+        color: #ffffff !important;
+        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        padding: 4px 16px !important;
+        border-radius: 4px !important;
+        transition: all 0.2s ease !important;
+        min-width: 150px !important;
+        text-decoration: none !important;
+        cursor: pointer !important;
+    }
+    
+    .btn-empresa-bbva:hover {
+        background-color: #003366 !important;
+        border-color: #003366 !important;
+        color: #ffffff !important;
+        text-decoration: none !important;
+    }
+    
+    .btn-empresa-bbva:focus,
+    .btn-empresa-bbva:active {
+        background-color: #002d5a !important;
+        border-color: #002d5a !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 0 4px rgba(0, 68, 129, 0.35) !important;
+        outline: none !important;
+    }
+    
+    /* Overlay para cerrar popover al hacer clic fuera */
+    .popover-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1040;
+        background: transparent;
+    }
+    
+    /* Popover de empresas */
+    .empresa-popover {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        z-index: 1050;
+        min-width: 280px;
+        max-width: 350px;
+        background-color: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        animation: popoverFadeIn 0.2s ease;
+    }
+    
+    @@keyframes popoverFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .empresa-popover-header {
+        padding: 10px 14px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .empresa-popover-title {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1rem;
+        color: #212529;
+    }
+    
+    .empresa-popover-content {
+        margin: 0;
+        font-size: 0.875rem;
+        color: #212529;
+        line-height: 1.5;
+    }
+    
+    .empresa-popover-body {
+        padding: 8px 0;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .empresa-popover-item {
+        padding: 10px 16px;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        font-size: 0.875rem;
+        color: #333;
+    }
+    
+    .empresa-popover-item:hover {
+        background-color: #f0f4f8;
+    }
+    
+    .empresa-popover-item.selected {
+        background-color: #e3f2fd;
+        color: #004481;
+        font-weight: 500;
+    }
+    
+    .empresa-popover-item:focus {
+        outline: none;
+        background-color: #e3f2fd;
+    }
+    
+    /* Información de empresa en popover */
+    .empresa-popover-info {
+        padding: 16px !important;
+    }
+    
+    .empresa-info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .empresa-info-row:last-of-type {
+        border-bottom: none;
+    }
+    
+    .empresa-info-label {
+        font-weight: 600;
+        color: #004481;
+        font-size: 0.875rem;
+    }
+    
+    .empresa-info-value {
+        color: #333;
+        font-size: 0.875rem;
+    }
+    
+    .empresa-info-description {
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid #eee;
+        font-size: 0.8rem;
+        color: #666;
+        line-height: 1.5;
+        margin-bottom: 0;
+    }
+</style>
 
 <div class="page @(_sidebarCollapsed ? "sidebar-collapsed" : string.Empty)">
     <div class="sidebar">
@@ -10,36 +181,44 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
+        <div class="top-row" style="padding-left: 1.5rem; padding-right: 0.5rem;">
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleSidebar">
+                <button class="btn btn-sm btn-primary" @onclick="ToggleSidebar" aria-label="@(_sidebarCollapsed ? "Mostrar menú" : "Ocultar menú")">
                     <span class="oi @( _sidebarCollapsed ? "oi-chevron-right" : "oi-chevron-left")" aria-hidden="true"></span>
-                    <span class="ms-1">@(_sidebarCollapsed ? "Mostrar menú" : "Ocultar menú")</span>
                 </button>
-                <span class="fw-semibold text-muted">BlazorVentas</span>
+                <span class="fw-semibold text-muted">@GetCurrentModuleName()</span>
             </div>
-            <div class="tenant-selector d-flex align-items-center gap-2">
-                <span class="tenant-label">Empresa</span>
-                <div class="tenant-input flex-grow-1">
-                    <input class="form-control form-control-sm"
-                           placeholder="Buscar empresa..."
-                           value="@_companySearch"
-                           @oninput="OnCompanyInput"
-                           @onkeydown="HandleCompanyKeyDown" />
-                    @if (_showSuggestions)
-                    {
-                        <ul class="list-group tenant-suggestions">
-                            @foreach (var company in _filteredCompanies)
+            <div class="tenant-selector">
+                @if (_showEmpresaPopover)
+                {
+                    <div class="popover-overlay" @onclick="CloseEmpresaPopover"></div>
+                }
+                <a tabindex="0" 
+                   class="btn btn-lg btn-empresa-bbva" 
+                   role="button"
+                   @onclick="ToggleEmpresaPopover">
+                    @(string.IsNullOrEmpty(_companySearch) ? "Empresa" : _companySearch)
+                </a>
+                @if (_showEmpresaPopover)
+                {
+                    <div class="empresa-popover">
+                        <div class="empresa-popover-header">
+                            <h6 class="empresa-popover-title">@(TenantState.CurrentCompany?.Name ?? "Empresa")</h6>
+                        </div>
+                        <div class="empresa-popover-body empresa-popover-info">
+                            @if (TenantState.CurrentCompany != null)
                             {
-                                <li class="list-group-item list-group-item-action"
-                                    role="button"
-                                    @onclick="() => SelectCompany(company)">
-                                    @company.Name
-                                </li>
+                                <p class="empresa-popover-content">
+                                    Esta es la empresa actualmente seleccionada. Todos los datos mostrados corresponden a esta empresa. Use el botón flotante para cambiar de empresa.
+                                </p>
                             }
-                        </ul>
-                    }
-                </div>
+                            else
+                            {
+                                <p class="empresa-popover-content">No hay empresa seleccionada. Use el botón flotante para seleccionar una empresa.</p>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
         </div>
 
@@ -49,12 +228,60 @@
     </main>
 </div>
 
+<!-- FAB Menu de Empresas -->
+<div class="fab-container">
+    <button class="fab-button" @onclick="ToggleFabMenu" style="background-color: @GetCompanyColor();" aria-label="Seleccionar Empresa">
+        <span class="oi @(_showFabMenu ? "oi-chevron-top" : "oi-chevron-bottom")" aria-hidden="true"></span>
+    </button>
+    
+    @if (_showFabMenu)
+    {
+        <div class="fab-menu">
+            <div class="fab-menu-header">
+                <span class="fab-menu-title">Seleccionar Empresa</span>
+                <button class="fab-close-button" @onclick="CloseFabMenu" aria-label="Cerrar">
+                    <span class="oi oi-x" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="fab-menu-content">
+                @if (!_companies.Any())
+                {
+                    <div class="fab-menu-empty">No hay empresas disponibles</div>
+                }
+                else
+                {
+                    @foreach (var company in _companies)
+                    {
+                        var companyColor = string.IsNullOrWhiteSpace(company.Color) ? "#004481" : company.Color;
+                        var isSelected = TenantState.CurrentCompanyId == company.Id;
+                        <div class="fab-menu-item @(isSelected ? "selected" : "")" 
+                             style="border-left: 4px solid @companyColor;"
+                             @onclick="() => SelectCompanyFromFab(company)">
+                            <div class="fab-menu-item-color" style="background-color: @companyColor;"></div>
+                            <span class="fab-menu-item-name">@company.Name</span>
+                            @if (isSelected)
+                            {
+                                <span class="fab-menu-item-check">
+                                    <span class="oi oi-check" aria-hidden="true"></span>
+                                </span>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+        <div class="fab-overlay" @onclick="CloseFabMenu"></div>
+    }
+</div>
+
 @code {
     private bool _sidebarCollapsed;
     private string _companySearch = string.Empty;
     private List<Company> _companies = new();
     private List<Company> _filteredCompanies = new();
     private bool _showSuggestions;
+    private bool _showFabMenu = false;
+    private bool _showEmpresaPopover = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -67,6 +294,63 @@
         }
 
         UpdateSuggestions();
+        
+        // Suscribirse a cambios de empresa
+        TenantState.OnTenantChanged += OnCompanyChanged;
+        
+        // Suscribirse a cambios de navegación
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    public void Dispose()
+    {
+        TenantState.OnTenantChanged -= OnCompanyChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+
+    private void OnCompanyChanged(Company company)
+    {
+        InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
+    }
+
+    private string GetCompanyColor()
+    {
+        return "rgb(98, 0, 238)"; // Color fijo para el FAB button
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
+    }
+
+    private string GetCurrentModuleName()
+    {
+        var uri = Navigation.Uri;
+        var path = Navigation.ToBaseRelativePath(uri);
+        
+        if (string.IsNullOrEmpty(path) || path == "/")
+            return "Home";
+        
+        // Remover parámetros de consulta y fragmentos
+        var cleanPath = path.Split('?')[0].Split('#')[0].TrimStart('/');
+        
+        // Mapear rutas a nombres de módulos
+        return cleanPath.ToLower() switch
+        {
+            "ventas" => "Ventas",
+            "productos" => "Productos",
+            "proveedores" => "Proveedores",
+            "vendedores" => "Vendedores",
+            "clientes" => "Clientes",
+            "empresas" => "Empresas",
+            _ => "BlazorVentas"
+        };
     }
 
     private void ToggleSidebar()
@@ -78,6 +362,7 @@
     {
         _companySearch = e.Value?.ToString() ?? string.Empty;
         UpdateSuggestions();
+        StateHasChanged();
     }
 
     private void HandleCompanyKeyDown(KeyboardEventArgs e)
@@ -101,6 +386,49 @@
         _showSuggestions = false;
         TenantState.SetCompany(company);
         UpdateSuggestions();
+        StateHasChanged();
+    }
+
+    private async Task ToggleFabMenu()
+    {
+        _showFabMenu = !_showFabMenu;
+        if (_showFabMenu)
+        {
+            // Recargar la lista de empresas cuando se abre el menú
+            _companies = await Commerce.GetCompaniesAsync();
+        }
+    }
+
+    private void CloseFabMenu()
+    {
+        _showFabMenu = false;
+    }
+
+    private void SelectCompanyFromFab(Company company)
+    {
+        TenantState.SetCompany(company);
+        _companySearch = company.Name;
+        CloseFabMenu();
+    }
+    
+    private void ToggleEmpresaPopover()
+    {
+        _showEmpresaPopover = !_showEmpresaPopover;
+        StateHasChanged();
+    }
+    
+    private void CloseEmpresaPopover()
+    {
+        _showEmpresaPopover = false;
+        StateHasChanged();
+    }
+    
+    private void SelectCompanyFromPopover(Company company)
+    {
+        TenantState.SetCompany(company);
+        _companySearch = company.Name;
+        _showEmpresaPopover = false;
+        StateHasChanged();
     }
 
     private void UpdateSuggestions()
@@ -120,5 +448,19 @@
 
         _showSuggestions = !string.IsNullOrWhiteSpace(term) && _filteredCompanies.Any() &&
             !_filteredCompanies.Any(c => c.Name.Equals(term, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void OnCompanyFieldFocus()
+    {
+        // Trigger state update for focus styling
+        StateHasChanged();
+    }
+
+    private async Task OnCompanyFieldBlur()
+    {
+        // Small delay to allow click on suggestions
+        await Task.Delay(200);
+        _showSuggestions = false;
+        StateHasChanged();
     }
 }

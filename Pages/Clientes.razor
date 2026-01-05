@@ -1,96 +1,873 @@
 @page "/clientes"
+@using Microsoft.AspNetCore.Components.Web
+@using BlazorVentas.Data
 @inject CommerceService Commerce
 @inject TenantState TenantState
+@inject IJSRuntime JSRuntime
+@inject BlazorVentas.Services.SessionService SessionService
 @implements IDisposable
 
-<PageTitle>Clientes</PageTitle>
+<PageTitle>ABM Clientes</PageTitle>
 
-<h1 class="mb-4">Clientes</h1>
+<style>
+    .card-header h5 {
+        font-size: 0.875rem;
+    }
+    
+    .filter-label {
+        font-size: 0.8125rem;
+        color: #6c757d;
+        margin-right: 0.5rem;
+    }
+    .filter-select {
+        font-size: 0.875rem;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        padding: 0.375rem 2rem 0.375rem 0.75rem;
+        background-color: white;
+        min-width: 140px;
+    }
+    .filter-select:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    
+    .customers-table {
+        margin: 0;
+    }
+    .customers-table th {
+        font-size: 0.8125rem;
+    }
+    .customers-table tbody tr {
+        height: 40px !important;
+    }
+    .customers-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa !important;
+    }
+    .customers-table tbody tr:nth-child(odd) {
+        background-color: #ffffff !important;
+    }
+    .customers-table tbody tr:hover {
+        background-color: #e9ecef !important;
+    }
+    .customers-table tbody tr.table-active {
+        background-color: #cfe2ff !important;
+    }
+    .customers-table tbody td {
+        padding: 0.3rem 0.5rem !important;
+        vertical-align: middle !important;
+    }
+    
+    /* Customer Cell */
+    .customer-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .customer-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    .customer-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .customer-name {
+        font-weight: 600;
+        color: #3c4858;
+        text-decoration: none;
+        margin-bottom: 2px;
+    }
+    .customer-name:hover {
+        color: #7c3aed;
+    }
+    .customer-code {
+        font-size: 0.75rem;
+        color: #9ca3af;
+    }
+    
+    /* Badges */
+    .zone-badge {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        background-color: #e0e7ff;
+        color: #4338ca;
+    }
+    
+    /* Status Badges */
+    .status-badge {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    .status-badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+    .status-active {
+        background-color: #d1fae5;
+        color: #059669;
+    }
+    .status-active::before {
+        background-color: #10b981;
+    }
+    .status-inactive {
+        background-color: #fee2e2;
+        color: #dc2626;
+    }
+    .status-inactive::before {
+        background-color: #ef4444;
+    }
+    
+    /* Actions */
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: #6c757d;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .action-btn:hover {
+        background-color: #f1f3f5;
+    }
+    .action-btn.edit:hover {
+        color: #7c3aed;
+        background-color: #ede9fe;
+    }
+    .action-btn.delete:hover {
+        color: #dc3545;
+        background-color: #fee2e2;
+    }
+    .action-btn.view:hover {
+        color: #3b82f6;
+        background-color: #dbeafe;
+    }
+    
+    /* Checkbox */
+    .customer-checkbox {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        cursor: pointer;
+        accent-color: #7c3aed;
+    }
+    
+    /* Pagination */
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-top: 1px solid #e9ecef;
+    }
+    .pagination-info {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .pagination-buttons {
+        display: flex;
+        gap: 0.25rem;
+    }
+    .page-btn {
+        min-width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #dee2e6;
+        background: white;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .page-btn:hover:not(.active):not(:disabled) {
+        background-color: #f8f9fa;
+        border-color: #7c3aed;
+        color: #7c3aed;
+    }
+    .page-btn.active {
+        background: #7c3aed;
+        border-color: #7c3aed;
+        color: white;
+    }
+    .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    /* Search */
+    .search-box {
+        position: relative;
+    }
+    .search-box input {
+        padding-left: 2.5rem;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        font-size: 0.875rem;
+        height: 38px;
+        width: 250px;
+    }
+    .search-box input:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    .search-box .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+    }
+    
+    /* Modal Styles */
+    .modal-header {
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        color: white;
+        border-radius: 8px 8px 0 0;
+    }
+    .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+    .modal-content {
+        border: none;
+        border-radius: 8px;
+    }
+    .form-label {
+        font-weight: 500;
+        color: #4b5563;
+        font-size: 0.875rem;
+    }
+    .form-control, .form-select {
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    .empty-state-icon {
+        font-size: 4rem;
+        color: #d1d5db;
+        margin-bottom: 1rem;
+    }
+    .empty-state-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #4b5563;
+        margin-bottom: 0.5rem;
+    }
+    .empty-state-text {
+        color: #9ca3af;
+        margin-bottom: 1.5rem;
+    }
+</style>
 
-<div class="row g-4">
-    <div class="col-lg-4">
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <h5 class="mb-0">@(_editingCustomer.Id == 0 ? "Nuevo cliente" : $"Editar #{_editingCustomer.Id}")</h5>
-            </div>
-            <div class="card-body">
-                <EditForm Model="_editingCustomer" OnValidSubmit="SaveCustomer">
-                    <DataAnnotationsValidator />
-                    <ValidationSummary />
-
-                    <div class="mb-3">
-                        <label class="form-label">Nombre</label>
-                        <InputText class="form-control" @bind-Value="_editingCustomer.Name" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Correo</label>
-                        <InputText class="form-control" @bind-Value="_editingCustomer.Email" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Teléfono</label>
-                        <InputText class="form-control" @bind-Value="_editingCustomer.Phone" />
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">Guardar</button>
-                        <button type="button" class="btn btn-outline-secondary" @onclick="ResetForm">Cancelar</button>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
+<!-- Filters -->
+<div class="card shadow-sm">
+    <div class="card-header py-2">
+        <h5 class="mb-0">
+            <span class="oi oi-person me-2"></span>ABM Clientes
+        </h5>
     </div>
-    <div class="col-lg-8">
-        <div class="card shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Listado</h5>
-                <span class="badge text-bg-secondary">@_customers.Count clientes</span>
-            </div>
-            <div class="table-responsive">
-                <table class="table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Correo</th>
-                            <th>Teléfono</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (!_customers.Any())
-                        {
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-4">Sin clientes</td>
-                            </tr>
-                        }
-                        else
-                        {
-                            @foreach (var customer in _customers)
-                            {
-                                <tr>
-                                    <td>@customer.Name</td>
-                                    <td>@customer.Email</td>
-                                    <td>@customer.Phone</td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-link" @onclick="() => EditCustomer(customer)">Editar</button>
-                                        <button class="btn btn-sm btn-link text-danger" @onclick="() => DeleteCustomer(customer.Id)">Eliminar</button>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <span class="filter-label">Filtrar por:</span>
+                
+                <select class="filter-select" @bind="_filterZona">
+                    <option value="">Todas las Zonas</option>
+                    @foreach (var zona in _zonas)
+                    {
+                        <option value="@zona.Id">@zona.Nombre</option>
+                    }
+                </select>
+                
+                <select class="filter-select" @bind="_filterEstado">
+                    <option value="">Todos los Estados</option>
+                    <option value="active">Activo</option>
+                    <option value="inactive">Inhabilitado</option>
+                </select>
+                
+                <select class="filter-select" @bind="_filterTipoCliente">
+                    <option value="">Todos los Tipos</option>
+                    @foreach (var tipo in _tiposCliente)
+                    {
+                        <option value="@tipo.Id">@tipo.Nombre</option>
+                    }
+                </select>
+                
+                <div class="search-box">
+                    <span class="search-icon oi oi-magnifying-glass"></span>
+                    <input type="text" class="form-control" placeholder="Buscar clientes..." 
+                           @bind="_searchText" @bind:event="oninput" />
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Customers Table -->
+<div class="card shadow-sm mt-3" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+    <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <h5 class="mb-0">Listado de Clientes</h5>
+        <button class="btn btn-sm btn-primary" @onclick="OpenAddModal">
+            <span class="oi oi-plus"></span> Agregar Cliente
+        </button>
+    </div>
+    @if (_loading)
+    {
+        <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (!FilteredCustomers.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <span class="oi oi-person"></span>
+            </div>
+            <h3 class="empty-state-title">No hay clientes</h3>
+            <p class="empty-state-text">Comienza agregando tu primer cliente.</p>
+            <button class="btn btn-sm btn-primary" @onclick="OpenAddModal">
+                <span class="oi oi-plus"></span> Agregar Cliente
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 customers-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">
+                            <input type="checkbox" class="customer-checkbox" 
+                                   @bind="_selectAll" @bind:after="ToggleSelectAll" />
+                        </th>
+                        <th>Cliente</th>
+                        <th>CUIT</th>
+                        <th>Zona</th>
+                        <th>Teléfono</th>
+                        <th>Vendedor</th>
+                        <th>Estado</th>
+                        <th style="width: 120px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var customer in PaginatedCustomers)
+                    {
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="customer-checkbox" 
+                                       checked="@_selectedCustomers.Contains(customer.Id)"
+                                       @onchange="() => ToggleCustomerSelection(customer.Id)" />
+                            </td>
+                            <td>
+                                <div class="customer-cell">
+                                    <div class="customer-avatar">
+                                        @GetInitials(customer.Name)
+                                    </div>
+                                    <div class="customer-info">
+                                        <a href="#" class="customer-name" @onclick:preventDefault @onclick="() => OpenEditModal(customer)">@customer.Name</a>
+                                        <span class="customer-code">Cód: @customer.CodigoCliente</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@(customer.Cuit ?? "—")</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(customer.ZonaNombre))
+                                {
+                                    <span class="zone-badge">@customer.ZonaNombre</span>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+                            <td>@(customer.Phone ?? "—")</td>
+                            <td>@(customer.VendedorNombre ?? "—")</td>
+                            <td>
+                                <span class="status-badge @(customer.Inhabilitado ? "status-inactive" : "status-active")">
+                                    @(customer.Inhabilitado ? "Inhabilitado" : "Activo")
+                                </span>
+                            </td>
+                            <td>
+                                <button class="action-btn view" title="Ver detalles" @onclick="() => OpenViewModal(customer)">
+                                    <span class="oi oi-eye"></span>
+                                </button>
+                                <button class="action-btn edit" title="Editar" @onclick="() => OpenEditModal(customer)">
+                                    <span class="oi oi-pencil"></span>
+                                </button>
+                                <button class="action-btn delete" title="Eliminar" @onclick="() => ConfirmDelete(customer)">
+                                    <span class="oi oi-trash"></span>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Mostrando @((_currentPage - 1) * _pageSize + 1) a @Math.Min(_currentPage * _pageSize, FilteredCustomers.Count()) de @FilteredCustomers.Count() clientes
+            </div>
+            <div class="pagination-buttons">
+                <button class="page-btn" disabled="@(_currentPage == 1)" @onclick="() => GoToPage(_currentPage - 1)">
+                    <span class="oi oi-chevron-left"></span>
+                </button>
+                @for (int i = 1; i <= TotalPages; i++)
+                {
+                    var pageNum = i;
+                    <button class="page-btn @(pageNum == _currentPage ? "active" : "")" @onclick="() => GoToPage(pageNum)">
+                        @pageNum
+                    </button>
+                }
+                <button class="page-btn" disabled="@(_currentPage == TotalPages)" @onclick="() => GoToPage(_currentPage + 1)">
+                    <span class="oi oi-chevron-right"></span>
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Modal Agregar/Editar -->
+@if (_showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <span class="oi @(_isEditing ? "oi-pencil" : "oi-plus") me-2"></span>
+                        @(_isEditing ? "Editar Cliente" : "Nuevo Cliente")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    <!-- Sección: Datos Básicos -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-person me-2"></span>Datos Básicos</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-2">
+                            <label class="form-label">Código Cliente *</label>
+                            <input type="number" class="form-control" @bind="_editCustomer.CodigoCliente" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Código Sucursal</label>
+                            <input type="number" class="form-control" @bind="_editCustomer.CodigoSucursal" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Cód. para Mostrar</label>
+                            <input type="number" class="form-control" @bind="_editCustomer.CodigoParaMostrar" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre Cliente *</label>
+                            <input type="text" class="form-control" @bind="_editCustomer.Name" placeholder="Nombre del cliente" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre Sucursal</label>
+                            <input type="text" class="form-control" @bind="_editCustomer.NombreSucursal" placeholder="Nombre de la sucursal" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Número Proveedor</label>
+                            <input type="number" class="form-control" @bind="_editCustomer.NumeroProveedor" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">CUIT</label>
+                            <input type="text" class="form-control" @bind="_editCustomer.Cuit" placeholder="XX-XXXXXXXX-X" />
+                        </div>
+                    </div>
+
+                    <!-- Sección: Domicilios -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-home me-2"></span>Domicilios</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Domicilio de Entrega</label>
+                            <input type="text" class="form-control" @bind="_editCustomer.DomicilioEntrega" placeholder="Dirección de entrega" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Domicilio Legal</label>
+                            <input type="text" class="form-control" @bind="_editCustomer.DomicilioLegal" placeholder="Dirección legal" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Provincia</label>
+                            <select class="form-select" value="@(_editCustomer.ProvinciaId?.ToString() ?? "")" 
+                                    @onchange="OnProvinciaChanged">
+                                <option value="">Seleccionar provincia</option>
+                                @foreach (var prov in _provincias)
+                                {
+                                    <option value="@prov.Id">@prov.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Localidad</label>
+                            <select class="form-select" value="@(_editCustomer.LocalidadId?.ToString() ?? "")" 
+                                    @onchange="OnLocalidadChanged">
+                                <option value="">Seleccionar localidad</option>
+                                @foreach (var loc in _localidadesFiltradas)
+                                {
+                                    <option value="@loc.Id">@loc.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">C.P.</label>
+                            <input type="number" class="form-control" @bind="_editCustomer.CP" />
+                        </div>
+                    </div>
+
+                    <!-- Sección: Contacto -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-phone me-2"></span>Contacto</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" @bind="_editCustomer.Phone" placeholder="Número de teléfono" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" @bind="_editCustomer.Email" placeholder="correo@ejemplo.com" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Web</label>
+                            <input type="text" class="form-control" @bind="_editCustomer.Web" placeholder="www.ejemplo.com" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Contacto</label>
+                            <input type="text" class="form-control" @bind="_editCustomer.Contacto" placeholder="Nombre del contacto" />
+                        </div>
+                    </div>
+
+                    <!-- Sección: Comercial -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-dollar me-2"></span>Datos Comerciales</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-2">
+                            <label class="form-label">Lista de Precio</label>
+                            <select class="form-select" @bind="_editCustomer.ListaPrecio">
+                                <option value="1">Lista 1</option>
+                                <option value="2">Lista 2</option>
+                                <option value="3">Lista 3</option>
+                                <option value="4">Lista 4</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Código Descuento</label>
+                            <select class="form-select" value="@(_editCustomer.CodigoDescuentoId?.ToString() ?? "")" 
+                                    @onchange="OnDescuentoChanged">
+                                <option value="">Sin descuento</option>
+                                @foreach (var desc in _descuentos)
+                                {
+                                    <option value="@desc.Id">@desc.Codigo - @desc.Descripcion</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Tipo Cliente</label>
+                            <select class="form-select" value="@(_editCustomer.TipoClienteId?.ToString() ?? "")" 
+                                    @onchange="OnTipoClienteChanged">
+                                <option value="">Seleccionar tipo</option>
+                                @foreach (var tipo in _tiposCliente)
+                                {
+                                    <option value="@tipo.Id">@tipo.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Condición Pago</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" @bind="_editCustomer.CondicionPago" />
+                                <span class="input-group-text">días</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección: Asignaciones -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-people me-2"></span>Asignaciones</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">Zona de Venta</label>
+                            <select class="form-select" value="@(_editCustomer.ZonaId?.ToString() ?? "")" 
+                                    @onchange="OnZonaChanged">
+                                <option value="">Seleccionar zona</option>
+                                @foreach (var zona in _zonas)
+                                {
+                                    <option value="@zona.Id">@zona.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Vendedor</label>
+                            <select class="form-select" value="@(_editCustomer.VendedorId?.ToString() ?? "")" 
+                                    @onchange="OnVendedorChanged">
+                                <option value="">Seleccionar vendedor</option>
+                                @foreach (var vend in _vendedores)
+                                {
+                                    <option value="@vend.Id">@vend.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Cobrador</label>
+                            <select class="form-select" value="@(_editCustomer.CobradorId?.ToString() ?? "")" 
+                                    @onchange="OnCobradorChanged">
+                                <option value="">Seleccionar cobrador</option>
+                                @foreach (var cob in _cobradores)
+                                {
+                                    <option value="@cob.Id">@cob.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Clase de Cliente</label>
+                            <select class="form-select" value="@(_editCustomer.ClaseClienteId?.ToString() ?? "")" 
+                                    @onchange="OnClaseClienteChanged">
+                                <option value="">Seleccionar clase</option>
+                                @foreach (var clase in _clasesCliente)
+                                {
+                                    <option value="@clase.Id">@clase.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Sección: Fechas y Estado -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-calendar me-2"></span>Fechas y Estado</h6>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Fecha Última Compra</label>
+                            <input type="date" class="form-control" @bind="_editCustomer.FechaUltimaCompra" disabled />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Fecha de Alta</label>
+                            <input type="date" class="form-control" @bind="_editCustomer.FechaAlta" />
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-check form-switch mt-4">
+                                <input class="form-check-input" type="checkbox" id="inhabilitado" @bind="_editCustomer.Inhabilitado" />
+                                <label class="form-check-label" for="inhabilitado">Inhabilitado</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-check form-switch mt-4">
+                                <input class="form-check-input" type="checkbox" id="tieneMensaje" @bind="_editCustomer.TieneMensaje" />
+                                <label class="form-check-label" for="tieneMensaje">Tiene Mensaje</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Mensaje sobre Cliente</label>
+                            <input type="text" class="form-control" @bind="_editCustomer.MensajeSobreCliente" 
+                                   placeholder="Mensaje o nota sobre el cliente" disabled="@(!_editCustomer.TieneMensaje)" />
+                        </div>
+                    </div>
+                    
+                    @if (!string.IsNullOrWhiteSpace(_modalError))
+                    {
+                        <div class="alert alert-danger mt-3 mb-0">@_modalError</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveCustomer">
+                        <span class="oi oi-check me-1"></span>
+                        @(_isEditing ? "Guardar Cambios" : "Crear Cliente")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Ver Detalles -->
+@if (_showViewModal && _viewCustomer != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <span class="oi oi-eye me-2"></span>Detalles del Cliente
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="() => _showViewModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <div class="customer-avatar mx-auto" style="width: 80px; height: 80px; font-size: 2rem;">
+                            @GetInitials(_viewCustomer.Name)
+                        </div>
+                    </div>
+                    <h4 class="text-center mb-4">@_viewCustomer.Name</h4>
+                    <div class="row g-3">
+                        <div class="col-4">
+                            <strong class="text-muted">Código:</strong><br/>
+                            @_viewCustomer.CodigoCliente
+                        </div>
+                        <div class="col-4">
+                            <strong class="text-muted">CUIT:</strong><br/>
+                            @(_viewCustomer.Cuit ?? "—")
+                        </div>
+                        <div class="col-4">
+                            <strong class="text-muted">Teléfono:</strong><br/>
+                            @(_viewCustomer.Phone ?? "—")
+                        </div>
+                        <div class="col-4">
+                            <strong class="text-muted">Email:</strong><br/>
+                            @(_viewCustomer.Email ?? "—")
+                        </div>
+                        <div class="col-4">
+                            <strong class="text-muted">Zona:</strong><br/>
+                            @(_viewCustomer.ZonaNombre ?? "—")
+                        </div>
+                        <div class="col-4">
+                            <strong class="text-muted">Vendedor:</strong><br/>
+                            @(_viewCustomer.VendedorNombre ?? "—")
+                        </div>
+                        <div class="col-6">
+                            <strong class="text-muted">Domicilio Entrega:</strong><br/>
+                            @(_viewCustomer.DomicilioEntrega ?? "—")
+                        </div>
+                        <div class="col-6">
+                            <strong class="text-muted">Estado:</strong><br/>
+                            <span class="status-badge @(_viewCustomer.Inhabilitado ? "status-inactive" : "status-active")">
+                                @(_viewCustomer.Inhabilitado ? "Inhabilitado" : "Activo")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showViewModal = false">Cerrar</button>
+                    <button type="button" class="btn btn-primary" @onclick="() => { _showViewModal = false; OpenEditModal(_viewCustomer); }">
+                        <span class="oi oi-pencil me-1"></span>Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Confirmar Eliminación -->
+@if (_showDeleteModal && _deleteCustomer != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <span class="oi oi-warning me-2"></span>Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => _showDeleteModal = false"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <div class="mb-3">
+                        <span class="oi oi-trash" style="font-size: 3rem; color: #dc3545;"></span>
+                    </div>
+                    <h5>¿Eliminar este cliente?</h5>
+                    <p class="text-muted mb-0">
+                        Estás por eliminar <strong>@_deleteCustomer.Name</strong>.<br/>
+                        Esta acción no se puede deshacer.
+                    </p>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showDeleteModal = false">Cancelar</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteCustomer">
+                        <span class="oi oi-trash me-1"></span>Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
+    private bool _loading = true;
     private List<Customer> _customers = new();
-    private Customer _editingCustomer = new();
+    
+    // Listas ABM
+    private List<ProvinciaItem> _provincias = new();
+    private List<LocalidadItem> _localidades = new();
+    private List<LocalidadItem> _localidadesFiltradas = new();
+    private List<DescuentoItem> _descuentos = new();
+    private List<TipoClienteItem> _tiposCliente = new();
+    private List<ZonaItem> _zonas = new();
+    private List<VendedorItem> _vendedores = new();
+    private List<CobradorItem> _cobradores = new();
+    private List<ClaseClienteItem> _clasesCliente = new();
+    
+    // Filtros
+    private string _searchText = "";
+    private string _filterZona = "";
+    private string _filterEstado = "";
+    private string _filterTipoCliente = "";
+    
+    // Paginación
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+    
+    // Selección
+    private bool _selectAll = false;
+    private HashSet<int> _selectedCustomers = new();
+    
+    // Modales
+    private bool _showModal = false;
+    private bool _showViewModal = false;
+    private bool _showDeleteModal = false;
+    private bool _isEditing = false;
+    private Customer _editCustomer = new();
+    private Customer? _viewCustomer;
+    private Customer? _deleteCustomer;
+    private string? _modalError;
+    
+    private IEnumerable<Customer> FilteredCustomers => _customers
+        .Where(c => string.IsNullOrEmpty(_searchText) || 
+                    c.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                    (c.Cuit?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false))
+        .Where(c => string.IsNullOrEmpty(_filterZona) || c.ZonaId?.ToString() == _filterZona)
+        .Where(c => string.IsNullOrEmpty(_filterEstado) || 
+                    (_filterEstado == "active" && !c.Inhabilitado) ||
+                    (_filterEstado == "inactive" && c.Inhabilitado))
+        .Where(c => string.IsNullOrEmpty(_filterTipoCliente) || c.TipoClienteId?.ToString() == _filterTipoCliente);
+    
+    private IEnumerable<Customer> PaginatedCustomers => FilteredCustomers
+        .Skip((_currentPage - 1) * _pageSize)
+        .Take(_pageSize);
+    
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(FilteredCustomers.Count() / (double)_pageSize));
 
     protected override async Task OnInitializedAsync()
     {
         TenantState.OnTenantChanged += HandleTenantChanged;
-        await LoadCustomers(resetForm: true);
+        await LoadDataAsync();
     }
 
     public void Dispose()
@@ -98,75 +875,356 @@
         TenantState.OnTenantChanged -= HandleTenantChanged;
     }
 
-    private async Task LoadCustomers(bool resetForm = false)
-    {
-        var companyId = TenantState.CurrentCompanyId;
-        if (companyId is null)
-        {
-            _customers.Clear();
-            if (resetForm)
-            {
-                ResetForm();
-            }
-            return;
-        }
-
-        _customers = await Commerce.GetCustomersAsync(companyId.Value);
-        if (resetForm)
-        {
-            ResetForm();
-        }
-    }
-
-    private void ResetForm()
-    {
-        _editingCustomer = new Customer
-        {
-            CompanyId = TenantState.CurrentCompanyId ?? 0
-        };
-    }
-
-    private void EditCustomer(Customer customer)
-    {
-        _editingCustomer = new Customer
-        {
-            Id = customer.Id,
-            CompanyId = customer.CompanyId,
-            Name = customer.Name,
-            Email = customer.Email,
-            Phone = customer.Phone
-        };
-    }
-
-    private async Task SaveCustomer()
-    {
-        if (TenantState.CurrentCompanyId is not int companyId)
-        {
-            return;
-        }
-
-        await Commerce.SaveCustomerAsync(companyId, _editingCustomer);
-        await LoadCustomers(resetForm: true);
-    }
-
-    private async Task DeleteCustomer(int id)
-    {
-        if (TenantState.CurrentCompanyId is not int companyId)
-        {
-            return;
-        }
-
-        await Commerce.DeleteCustomerAsync(companyId, id);
-        await LoadCustomers(resetForm: true);
-    }
-
-    private async void HandleTenantChanged(Company _)
+    private async void HandleTenantChanged(Company? company)
     {
         await InvokeAsync(async () =>
         {
-            await LoadCustomers(resetForm: true);
+            await LoadDataAsync();
             StateHasChanged();
         });
     }
-}
 
+    private async Task LoadDataAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+        
+        try
+        {
+            // Cargar listas ABM (globales)
+            _provincias = await Commerce.GetProvinciasAsync();
+            _localidades = await Commerce.GetLocalidadesAsync();
+            _descuentos = await Commerce.GetDescuentosAsync();
+            _tiposCliente = await Commerce.GetTiposClienteAsync();
+            _zonas = await Commerce.GetZonasAsync();
+            _vendedores = await Commerce.GetVendedoresAbmAsync();
+            _cobradores = await Commerce.GetCobradoresAsync();
+            _clasesCliente = await Commerce.GetClasesClienteAsync();
+            
+            var companyId = TenantState.CurrentCompanyId;
+            if (companyId.HasValue)
+            {
+                _customers = await Commerce.GetCustomersAsync(companyId.Value);
+            }
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+    
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        return name.Length >= 2 ? name.Substring(0, 2).ToUpper() : name.ToUpper();
+    }
+    
+    private void GoToPage(int page)
+    {
+        _currentPage = Math.Max(1, Math.Min(page, TotalPages));
+    }
+    
+    private void ToggleSelectAll()
+    {
+        if (_selectAll)
+        {
+            _selectedCustomers = FilteredCustomers.Select(c => c.Id).ToHashSet();
+        }
+        else
+        {
+            _selectedCustomers.Clear();
+        }
+    }
+    
+    private void ToggleCustomerSelection(int customerId)
+    {
+        if (_selectedCustomers.Contains(customerId))
+            _selectedCustomers.Remove(customerId);
+        else
+            _selectedCustomers.Add(customerId);
+        
+        _selectAll = FilteredCustomers.All(c => _selectedCustomers.Contains(c.Id));
+    }
+    
+    private void OpenAddModal()
+    {
+        _isEditing = false;
+        var nextCodigo = _customers.Any() ? _customers.Max(c => c.CodigoCliente) + 1 : 1;
+        _editCustomer = new Customer
+        {
+            CompanyId = TenantState.CurrentCompanyId ?? 0,
+            CodigoCliente = nextCodigo,
+            CodigoParaMostrar = nextCodigo,
+            ListaPrecio = 1,
+            FechaAlta = DateTime.Today
+        };
+        _localidadesFiltradas = _localidades;
+        _modalError = null;
+        _showModal = true;
+    }
+    
+    private void OpenEditModal(Customer customer)
+    {
+        _isEditing = true;
+        _editCustomer = new Customer
+        {
+            Id = customer.Id,
+            CompanyId = customer.CompanyId,
+            CodigoCliente = customer.CodigoCliente,
+            CodigoSucursal = customer.CodigoSucursal,
+            CodigoParaMostrar = customer.CodigoParaMostrar,
+            Name = customer.Name,
+            NombreSucursal = customer.NombreSucursal,
+            NumeroProveedor = customer.NumeroProveedor,
+            DomicilioEntrega = customer.DomicilioEntrega,
+            DomicilioLegal = customer.DomicilioLegal,
+            LocalidadId = customer.LocalidadId,
+            LocalidadNombre = customer.LocalidadNombre,
+            ProvinciaId = customer.ProvinciaId,
+            ProvinciaNombre = customer.ProvinciaNombre,
+            CP = customer.CP,
+            Phone = customer.Phone,
+            Email = customer.Email,
+            Web = customer.Web,
+            Contacto = customer.Contacto,
+            Cuit = customer.Cuit,
+            ListaPrecio = customer.ListaPrecio,
+            CodigoDescuentoId = customer.CodigoDescuentoId,
+            CodigoDescuentoNombre = customer.CodigoDescuentoNombre,
+            TipoClienteId = customer.TipoClienteId,
+            TipoClienteNombre = customer.TipoClienteNombre,
+            CondicionPago = customer.CondicionPago,
+            ZonaId = customer.ZonaId,
+            ZonaNombre = customer.ZonaNombre,
+            VendedorId = customer.VendedorId,
+            VendedorNombre = customer.VendedorNombre,
+            CobradorId = customer.CobradorId,
+            CobradorNombre = customer.CobradorNombre,
+            ClaseClienteId = customer.ClaseClienteId,
+            ClaseClienteNombre = customer.ClaseClienteNombre,
+            FechaUltimaCompra = customer.FechaUltimaCompra,
+            FechaAlta = customer.FechaAlta,
+            Inhabilitado = customer.Inhabilitado,
+            MensajeSobreCliente = customer.MensajeSobreCliente,
+            TieneMensaje = customer.TieneMensaje
+        };
+        
+        // Filtrar localidades por provincia seleccionada
+        if (_editCustomer.ProvinciaId.HasValue)
+            _localidadesFiltradas = _localidades.Where(l => l.ProvinciaId == _editCustomer.ProvinciaId.Value).ToList();
+        else
+            _localidadesFiltradas = _localidades;
+            
+        _modalError = null;
+        _showModal = true;
+    }
+    
+    private void OpenViewModal(Customer customer)
+    {
+        _viewCustomer = customer;
+        _showViewModal = true;
+    }
+    
+    private void CloseModal()
+    {
+        _showModal = false;
+        _modalError = null;
+    }
+    
+    // Event handlers para los selectores
+    private void OnProvinciaChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
+        {
+            _editCustomer.ProvinciaId = id;
+            _editCustomer.ProvinciaNombre = _provincias.FirstOrDefault(p => p.Id == id)?.Nombre;
+            _localidadesFiltradas = _localidades.Where(l => l.ProvinciaId == id).ToList();
+            // Limpiar localidad si no pertenece a la nueva provincia
+            if (_editCustomer.LocalidadId.HasValue && !_localidadesFiltradas.Any(l => l.Id == _editCustomer.LocalidadId))
+            {
+                _editCustomer.LocalidadId = null;
+                _editCustomer.LocalidadNombre = null;
+            }
+        }
+        else
+        {
+            _editCustomer.ProvinciaId = null;
+            _editCustomer.ProvinciaNombre = null;
+            _localidadesFiltradas = _localidades;
+        }
+    }
+    
+    private void OnLocalidadChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
+        {
+            _editCustomer.LocalidadId = id;
+            _editCustomer.LocalidadNombre = _localidades.FirstOrDefault(l => l.Id == id)?.Nombre;
+        }
+        else
+        {
+            _editCustomer.LocalidadId = null;
+            _editCustomer.LocalidadNombre = null;
+        }
+    }
+    
+    private void OnDescuentoChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
+        {
+            _editCustomer.CodigoDescuentoId = id;
+            _editCustomer.CodigoDescuentoNombre = _descuentos.FirstOrDefault(d => d.Id == id)?.Descripcion;
+        }
+        else
+        {
+            _editCustomer.CodigoDescuentoId = null;
+            _editCustomer.CodigoDescuentoNombre = null;
+        }
+    }
+    
+    private void OnTipoClienteChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
+        {
+            _editCustomer.TipoClienteId = id;
+            _editCustomer.TipoClienteNombre = _tiposCliente.FirstOrDefault(t => t.Id == id)?.Nombre;
+        }
+        else
+        {
+            _editCustomer.TipoClienteId = null;
+            _editCustomer.TipoClienteNombre = null;
+        }
+    }
+    
+    private void OnZonaChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
+        {
+            _editCustomer.ZonaId = id;
+            _editCustomer.ZonaNombre = _zonas.FirstOrDefault(z => z.Id == id)?.Nombre;
+        }
+        else
+        {
+            _editCustomer.ZonaId = null;
+            _editCustomer.ZonaNombre = null;
+        }
+    }
+    
+    private void OnVendedorChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
+        {
+            _editCustomer.VendedorId = id;
+            _editCustomer.VendedorNombre = _vendedores.FirstOrDefault(v => v.Id == id)?.Nombre;
+        }
+        else
+        {
+            _editCustomer.VendedorId = null;
+            _editCustomer.VendedorNombre = null;
+        }
+    }
+    
+    private void OnCobradorChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
+        {
+            _editCustomer.CobradorId = id;
+            _editCustomer.CobradorNombre = _cobradores.FirstOrDefault(c => c.Id == id)?.Nombre;
+        }
+        else
+        {
+            _editCustomer.CobradorId = null;
+            _editCustomer.CobradorNombre = null;
+        }
+    }
+    
+    private void OnClaseClienteChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
+        {
+            _editCustomer.ClaseClienteId = id;
+            _editCustomer.ClaseClienteNombre = _clasesCliente.FirstOrDefault(c => c.Id == id)?.Nombre;
+        }
+        else
+        {
+            _editCustomer.ClaseClienteId = null;
+            _editCustomer.ClaseClienteNombre = null;
+        }
+    }
+    
+    private async Task SaveCustomer()
+    {
+        if (_editCustomer.CodigoCliente <= 0)
+        {
+            _modalError = "El código de cliente es requerido";
+            return;
+        }
+        
+        if (string.IsNullOrWhiteSpace(_editCustomer.Name))
+        {
+            _modalError = "El nombre del cliente es requerido";
+            return;
+        }
+        
+        // Validar código único
+        if (!_isEditing && _customers.Any(c => c.CodigoCliente == _editCustomer.CodigoCliente))
+        {
+            _modalError = "Ya existe un cliente con ese código";
+            return;
+        }
+        
+        try
+        {
+            var companyId = TenantState.CurrentCompanyId;
+            if (!companyId.HasValue)
+            {
+                _modalError = "No hay empresa seleccionada";
+                return;
+            }
+            
+            _editCustomer.CompanyId = companyId.Value;
+            var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+            var usuarioId = token != null ? await SessionService.GetUsuarioIdAsync(token) : null;
+            await Commerce.SaveCustomerAsync(companyId.Value, _editCustomer, usuarioId);
+            
+            await LoadDataAsync();
+            CloseModal();
+        }
+        catch (Exception ex)
+        {
+            _modalError = $"Error al guardar: {ex.Message}";
+        }
+    }
+    
+    private void ConfirmDelete(Customer customer)
+    {
+        _deleteCustomer = customer;
+        _showDeleteModal = true;
+    }
+    
+    private async Task DeleteCustomer()
+    {
+        if (_deleteCustomer == null) return;
+        
+        try
+        {
+            var companyId = TenantState.CurrentCompanyId;
+            if (!companyId.HasValue) return;
+            
+            var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+            var usuarioId = token != null ? await SessionService.GetUsuarioIdAsync(token) : null;
+            await Commerce.DeleteCustomerAsync(companyId.Value, _deleteCustomer.Id, usuarioId);
+            await LoadDataAsync();
+            _showDeleteModal = false;
+            _deleteCustomer = null;
+        }
+        catch
+        {
+            // Manejar error
+        }
+    }
+}

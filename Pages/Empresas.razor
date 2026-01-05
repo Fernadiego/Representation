@@ -1,0 +1,156 @@
+@page "/empresas"
+@inject CommerceService Commerce
+@inject TenantState TenantState
+
+<PageTitle>Empresas</PageTitle>
+
+<h1 class="mb-4">Empresas</h1>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">@(_editingCompany.Id == 0 ? "Nueva empresa" : $"Editar #{_editingCompany.Id}")</h5>
+            </div>
+            <div class="card-body">
+                <EditForm Model="_editingCompany" OnValidSubmit="SaveCompany">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <InputText class="form-control" @bind-Value="_editingCompany.Name" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Color de fondo</label>
+                        <InputText type="color" class="form-control form-control-color" @bind-Value="_companyColor" />
+                        <small class="form-text text-muted">Seleccione un color para identificar la empresa. Si no se selecciona, se usará el color azul BBVA por defecto.</small>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="ResetForm">Cancelar</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Listado de empresas</h5>
+                <span class="badge text-bg-secondary">@_companies.Count registros</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">Id</th>
+                            <th>Nombre</th>
+                            <th style="width: 25%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!_companies.Any())
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">Sin empresas</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var company in _companies)
+                            {
+                                <tr>
+                                    <td>@company.Id</td>
+                                    <td>@company.Name</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-link" @onclick="() => EditCompany(company)">Editar</button>
+                                        <button class="btn btn-sm btn-link text-danger" @onclick="() => DeleteCompany(company.Id)">Eliminar</button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Company> _companies = new();
+    private Company _editingCompany = new();
+    private string _companyColor = "#004481"; // Valor por defecto azul BBVA
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData(resetForm: true);
+    }
+
+    private async Task LoadData(bool resetForm = false)
+    {
+        _companies = await Commerce.GetCompaniesAsync();
+
+        if (resetForm)
+        {
+            ResetForm();
+        }
+    }
+
+    private void ResetForm()
+    {
+        _editingCompany = new Company();
+        _companyColor = "#004481"; // Resetear al color por defecto
+    }
+
+    private void EditCompany(Company company)
+    {
+        _editingCompany = new Company
+        {
+            Id = company.Id,
+            Name = company.Name,
+            Color = company.Color
+        };
+        _companyColor = string.IsNullOrWhiteSpace(company.Color) ? "#004481" : company.Color;
+    }
+
+    private async Task SaveCompany()
+    {
+        // Asignar el color seleccionado (si es el color por defecto, guardar como null)
+        _editingCompany.Color = _companyColor == "#004481" ? null : _companyColor;
+        
+        await Commerce.SaveCompanyAsync(_editingCompany);
+        await LoadData(resetForm: true);
+
+        // Si la empresa editada es la actualmente seleccionada, actualizar el TenantState
+        if (TenantState.CurrentCompanyId == _editingCompany.Id)
+        {
+            var updated = _companies.FirstOrDefault(c => c.Id == _editingCompany.Id);
+            if (updated is not null)
+            {
+                TenantState.SetCompany(updated);
+            }
+        }
+    }
+
+    private async Task DeleteCompany(int companyId)
+    {
+        await Commerce.DeleteCompanyAsync(companyId);
+        await LoadData(resetForm: true);
+
+        // Si se borró la empresa actual, seleccionar otra (si existe)
+        if (TenantState.CurrentCompanyId == companyId)
+        {
+            var first = _companies.FirstOrDefault();
+            if (first is not null)
+            {
+                TenantState.SetCompany(first);
+            }
+        }
+    }
+}
+
+

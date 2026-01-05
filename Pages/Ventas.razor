@@ -137,6 +137,90 @@
         box-shadow: inset 0 0 0 2px rgba(13, 110, 253, 0.25);
     }
     
+    /* Material Design 3 Date Picker Styles */
+    .md3-date-picker-wrapper {
+        position: relative;
+        width: 100%;
+        margin-top: 16px;
+        padding-top: 8px;
+    }
+    
+    .md3-date-picker {
+        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        font-size: 0.8125rem !important;
+        width: 100% !important;
+        min-height: 40px !important;
+        height: 40px !important;
+        padding: 16px 12px 8px 12px !important;
+        background-color: transparent !important;
+        border: 1px solid rgba(0, 0, 0, 0.42) !important;
+        border-radius: 4px !important;
+        outline: none !important;
+        transition: border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        color: rgba(0, 0, 0, 0.87) !important;
+        cursor: pointer !important;
+    }
+    
+    /* When has value, reduce padding */
+    .md3-date-picker-wrapper.has-value .md3-date-picker {
+        padding: 8px 12px !important;
+    }
+    
+    .md3-date-picker:hover {
+        border-color: rgba(0, 0, 0, 0.87) !important;
+    }
+    
+    .md3-date-picker:focus {
+        border-color: #1976d2 !important;
+        border-width: 2px !important;
+        box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2) !important;
+    }
+    
+    .md3-date-picker-wrapper label.form-label {
+        position: absolute;
+        left: 12px;
+        top: 12px;
+        font-size: 0.8125rem;
+        color: rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        background-color: white;
+        padding: 0 4px;
+        transform-origin: left top;
+        z-index: 1;
+    }
+    
+    .md3-date-picker-wrapper label.form-label.small {
+        font-size: 0.75rem;
+    }
+    
+    /* Label moves up when focused or has value */
+    .md3-date-picker:focus ~ label.form-label,
+    .md3-date-picker-wrapper.has-value label.form-label,
+    .md3-date-picker-wrapper:focus-within label.form-label {
+        transform: translateY(-20px) scale(0.85);
+        color: #1976d2;
+        font-weight: 400;
+    }
+    
+    .md3-date-picker-wrapper:focus-within label.form-label {
+        color: #1976d2;
+    }
+    
+    .md3-date-picker-wrapper.has-value:not(:focus-within) label.form-label {
+        color: rgba(0, 0, 0, 0.6);
+    }
+    
+    /* Ocultar el icono nativo del date picker */
+    .md3-date-picker::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        filter: invert(0.5);
+    }
+    
+    .md3-date-picker:focus::-webkit-calendar-picker-indicator {
+        filter: invert(0.4) sepia(1) saturate(5) hue-rotate(175deg);
+    }
+    
     /* Material Design Autocomplete Styles */
     .material-autocomplete-wrapper {
         position: relative;
@@ -433,7 +517,9 @@
 <div class="mt-0 d-flex flex-column ventas-container" style="height: calc(100vh - 100px); font-size: calc(1rem - 4px);">
     <div class="card shadow-sm" style="flex-shrink: 0;">
         <div class="card-header py-2">
-            <h5 class="mb-0">Registrar venta</h5>
+            <h5 class="mb-0">
+                <span class="oi oi-cart me-2"></span>Registrar venta
+            </h5>
         </div>
         <div class="card-body p-2">
             @if (!CanCreateSale && _showCanCreateSaleAlert)
@@ -451,8 +537,10 @@
                 <!-- Campos de información de la venta -->
                 <div class="row g-2 mb-0">
                     <div class="col-md-2">
-                        <label class="form-label small">Fecha</label>
-                        <InputDate class="form-control form-control-sm" @bind-Value="_saleDraft.Date" />
+                        <div class="md3-date-picker-wrapper has-value">
+                            <InputDate class="md3-date-picker" @bind-Value="_saleDraft.Date" />
+                            <label class="form-label small">Fecha</label>
+                        </div>
                     </div>
                     <div class="col-md-2">
                         <div class="material-autocomplete-wrapper @(!string.IsNullOrEmpty(_saleDraft.TipoComprobante) ? "has-value" : "")">
@@ -729,81 +817,70 @@
                                     <td colspan="7" class="p-0 border-0" @onclick:stopPropagation="true">
                                         <div class="bg-light p-3">
                                             <div class="row g-3">
-                                                <div class="col-12">
-                                                    <div class="card border">
-                                                        <div class="card-header bg-white py-2">
-                                                            <strong class="small">@line.Product?.Name</strong>
+                                                <div class="col-6 col-md-3 col-lg-2">
+                                                    <label class="form-label small">Lista</label>
+                                                    <InputSelect class="form-select form-select-sm" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;" @bind-Value="lineEditState.ListaSeleccionada" @onchange="e => OnListaChanged(e, line, lineEditState)">
+                                                        <option value="1">Lista 1</option>
+                                                        <option value="2">Lista 2</option>
+                                                        <option value="3">Lista 3</option>
+                                                        <option value="4">Lista 4</option>
+                                                    </InputSelect>
+                                                </div>
+                                                <div class="col-6 col-md-3 col-lg-2">
+                                                    <label class="form-label small">Precio</label>
+                                                    <InputNumber class="form-control form-control-sm" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;" @bind-Value="line.UnitPrice" />
+                                                </div>
+                                                <div class="col-6 col-md-3 col-lg-2">
+                                                    <label class="form-label small">IVA</label>
+                                                    @if (lineEditState.IVASeleccionado == -1)
+                                                    {
+                                                        <div class="input-group input-group-sm">
+                                                            <InputNumber class="form-control" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;" @bind-Value="lineEditState.NuevoIVA" placeholder="%" />
+                                                            <button class="btn btn-outline-primary btn-sm" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;" type="button" @onclick="() => AgregarNuevoIVA(lineEditState)">Agregar</button>
+                                                            <button class="btn btn-outline-secondary btn-sm" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;" type="button" @onclick="() => CancelarNuevoIVA(lineEditState)">Cancelar</button>
                                                         </div>
-                                                        <div class="card-body p-3">
-                                                            <div class="row g-3">
-                                                                <div class="col-6 col-md-3 col-lg-2">
-                                                                    <label class="form-label small">Lista</label>
-                                                                    <InputSelect class="form-select form-select-sm" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;" @bind-Value="lineEditState.ListaSeleccionada" @onchange="e => OnListaChanged(e, line, lineEditState)">
-                                                                        <option value="1">Lista 1</option>
-                                                                        <option value="2">Lista 2</option>
-                                                                        <option value="3">Lista 3</option>
-                                                                        <option value="4">Lista 4</option>
-                                                                    </InputSelect>
-                                                                </div>
-                                                                <div class="col-6 col-md-3 col-lg-2">
-                                                                    <label class="form-label small">Precio</label>
-                                                                    <InputNumber class="form-control form-control-sm" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;" @bind-Value="line.UnitPrice" />
-                                                                </div>
-                                                                <div class="col-6 col-md-3 col-lg-2">
-                                                                    <label class="form-label small">IVA</label>
-                                                                    @if (lineEditState.IVASeleccionado == -1)
-                                                                    {
-                                                                        <div class="input-group input-group-sm">
-                                                                            <InputNumber class="form-control" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;" @bind-Value="lineEditState.NuevoIVA" placeholder="%" />
-                                                                            <button class="btn btn-outline-primary btn-sm" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;" type="button" @onclick="() => AgregarNuevoIVA(lineEditState)">Agregar</button>
-                                                                            <button class="btn btn-outline-secondary btn-sm" style="font-size: 0.7rem; padding: 0.2rem 0.4rem;" type="button" @onclick="() => CancelarNuevoIVA(lineEditState)">Cancelar</button>
-                                                                        </div>
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        <InputSelect class="form-select form-select-sm" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;" @bind-Value="lineEditState.IVASeleccionado" @onchange="e => OnIVAChanged(e, line, lineEditState)">
-                                                                            @foreach (var iva in _ivasDisponibles)
-                                                                            {
-                                                                                <option value="@iva">@iva%</option>
-                                                                            }
-                                                                            <option value="-1">+ Nuevo IVA...</option>
-                                                                        </InputSelect>
-                                                                    }
-                                                                </div>
-                                                                <div class="col-6 col-md-3 col-lg-2">
-                                                                    <label class="form-label small">IVA Calculado</label>
-                                                                    <div class="form-control form-control-sm bg-light" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;">@CalculateIVA(line, lineEditState).ToString("C")</div>
-                                                                </div>
-                                                                <div class="col-6 col-md-3 col-lg-2">
-                                                                    <label class="form-label small">Fabricación</label>
-                                                                    <div class="form-control form-control-sm bg-light" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;">@(line.Product?.Supplier?.Name ?? "N/A")</div>
-                                                                </div>
-                                                                <div class="col-6 col-md-3 col-lg-2">
-                                                                    <label class="form-label small">Oferta</label>
-                                                                    <div class="form-control form-control-sm bg-light" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;">@(line.UnitPrice < (line.Product?.UnitPrice ?? 0) ? "Sí" : "No")</div>
-                                                                </div>
-                                                                <div class="col-12 pt-2 border-top">
-                                                                    <div class="row">
-                                                                        <div class="col-md-4">
-                                                                            <div class="d-flex justify-content-between mb-2">
-                                                                                <span class="text-muted">Cantidad:</span>
-                                                                                <strong>@line.Quantity</strong>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="col-md-4">
-                                                                            <div class="d-flex justify-content-between mb-2">
-                                                                                <span class="text-muted">Subtotal:</span>
-                                                                                <strong>@line.LineTotal.ToString("C")</strong>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="col-md-4">
-                                                                            <div class="d-flex justify-content-between mb-2">
-                                                                                <span class="text-muted">Total con IVA:</span>
-                                                                                <strong>@((line.LineTotal + CalculateIVA(line, lineEditState) * line.Quantity).ToString("C"))</strong>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <InputSelect class="form-select form-select-sm" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;" @bind-Value="lineEditState.IVASeleccionado" @onchange="e => OnIVAChanged(e, line, lineEditState)">
+                                                            @foreach (var iva in _ivasDisponibles)
+                                                            {
+                                                                <option value="@iva">@iva%</option>
+                                                            }
+                                                            <option value="-1">+ Nuevo IVA...</option>
+                                                        </InputSelect>
+                                                    }
+                                                </div>
+                                                <div class="col-6 col-md-3 col-lg-2">
+                                                    <label class="form-label small">IVA Calculado</label>
+                                                    <div class="form-control form-control-sm bg-light" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;">@CalculateIVA(line, lineEditState).ToString("C")</div>
+                                                </div>
+                                                <div class="col-6 col-md-3 col-lg-2">
+                                                    <label class="form-label small">Fabricación</label>
+                                                    <div class="form-control form-control-sm bg-light" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;">@(line.Product?.Supplier?.Name ?? "N/A")</div>
+                                                </div>
+                                                <div class="col-6 col-md-3 col-lg-2">
+                                                    <label class="form-label small">Oferta</label>
+                                                    <div class="form-control form-control-sm bg-light" style="font-size: 0.75rem; padding: 0.2rem 0.4rem; height: 28px;">@(line.UnitPrice < (line.Product?.UnitPrice ?? 0) ? "Sí" : "No")</div>
+                                                </div>
+                                                <div class="col-12 pt-2 border-top">
+                                                    <div class="row">
+                                                        <div class="col-md-4">
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span class="text-muted">Cantidad:</span>
+                                                                <strong>@line.Quantity</strong>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span class="text-muted">Subtotal:</span>
+                                                                <strong>@line.LineTotal.ToString("C")</strong>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span class="text-muted">Total con IVA:</span>
+                                                                <strong>@((line.LineTotal + CalculateIVA(line, lineEditState) * line.Quantity).ToString("C"))</strong>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -863,6 +940,9 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-primary" @onclick="PrintHistorial">
+                    <span class="oi oi-print"></span> Imprimir
+                </button>
                 <button type="button" class="btn btn-sm" style="background-color: rgb(185, 1, 56); color: white; border-color: rgb(185, 1, 56);" @onclick="ClearGrid">
                     <span class="oi oi-action-undo"></span> Limpiar
                 </button>
@@ -873,6 +953,407 @@
         </div>
     </div>
 </div>
+
+@* Modal de Previsualización de Factura *@
+@if (_showInvoicePreview)
+{
+    <div class="invoice-preview-modal" @onclick="CloseInvoicePreview">
+        <div class="invoice-container" @onclick:stopPropagation="true">
+            <div class="invoice-paper">
+                @* Cabecera de la Factura *@
+                <div class="invoice-header">
+                    <div class="invoice-company">
+                        <h1>@(TenantState.CurrentCompany?.Name ?? "MI EMPRESA S.A.")</h1>
+                        <p><strong>Razón Social:</strong> @(TenantState.CurrentCompany?.Name ?? "Mi Empresa S.A.")</p>
+                        <p><strong>Dirección:</strong> Av. Principal 1234, Ciudad</p>
+                        <p><strong>Tel:</strong> (011) 4567-8900</p>
+                        <p><strong>CUIT:</strong> 30-12345678-9</p>
+                        <p><strong>Ing. Brutos:</strong> 30-12345678-9</p>
+                        <p><strong>Inicio Actividad:</strong> 01/01/2020</p>
+                    </div>
+                    <div class="invoice-type-box">
+                        <div class="invoice-type-letter">@GetTipoComprobanteLetra()</div>
+                        <div class="invoice-type-code">COD. 01</div>
+                    </div>
+                    <div class="invoice-info">
+                        <h2>@GetTipoComprobanteNombre()</h2>
+                        <p><strong>Nro. Comp.:</strong> @GetNumeroComprobanteFormateado()</p>
+                        <p><strong>Fecha de Emisión:</strong> @_saleDraft.Date.ToString("dd/MM/yyyy")</p>
+                        <p><strong>Responsable Inscripto</strong></p>
+                    </div>
+                </div>
+                
+                @* Datos del Cliente *@
+                <div class="invoice-parties">
+                    <div class="invoice-buyer" style="flex: 2;">
+                        <h3>Datos del Cliente</h3>
+                        <p><strong>Cliente:</strong> @GetClienteNombre()</p>
+                        <p><strong>Dirección:</strong> @GetClienteDireccion()</p>
+                        <p><strong>C.U.I.T.:</strong> @GetClienteCuit()</p>
+                        <p><strong>Resp. IVA:</strong> Responsable Inscripto</p>
+                        <p><strong>Condición de Venta:</strong> Contado</p>
+                    </div>
+                    <div class="invoice-seller">
+                        <h3>Datos de Venta</h3>
+                        <p><strong>Vendedor:</strong> @GetVendedorNombre()</p>
+                        <p><strong>Sucursal:</strong> @(_saleDraft.SucursalId?.ToString("D3") ?? "001")</p>
+                        <p><strong>Remito:</strong> @(_saleDraft.RemitoAsociado ?? "—")</p>
+                    </div>
+                </div>
+                
+                @* Tabla de Items *@
+                <table class="invoice-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">Código</th>
+                            <th>Descripción</th>
+                            <th style="width: 60px;">Cant.</th>
+                            <th style="width: 80px;">U. Medida</th>
+                            <th style="width: 90px;">Precio Unit.</th>
+                            <th style="width: 60px;">% Bonif</th>
+                            <th style="width: 60px;">Alíc. IVA</th>
+                            <th style="width: 90px;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in _newLines)
+                        {
+                            var product = _products.FirstOrDefault(p => p.Id == line.ProductId);
+                            <tr>
+                                <td>@(product?.Sku ?? line.ProductId.ToString("D4"))</td>
+                                <td>@(product?.Name ?? "Artículo")</td>
+                                <td>@line.Quantity.ToString("N2")</td>
+                                <td>Unidad</td>
+                                <td>@line.UnitPrice.ToString("C")</td>
+                                <td>0,00</td>
+                                <td>21,00%</td>
+                                <td>@line.LineTotal.ToString("C")</td>
+                            </tr>
+                        }
+                        @if (!_newLines.Any())
+                        {
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 20px; color: #888;">No hay items en el comprobante</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                
+                @* Footer con QR y Totales *@
+                <div class="invoice-footer">
+                    <div class="invoice-qr">
+                        <div class="invoice-qr-placeholder">
+                            <span class="oi oi-grid-three-up" style="font-size: 40px; color: #ccc;"></span>
+                        </div>
+                        <div class="invoice-qr-info">
+                            <p><strong>CAE:</strong> 12345678901234</p>
+                            <p><strong>Vto. CAE:</strong> @_saleDraft.Date.AddDays(10).ToString("dd/MM/yyyy")</p>
+                        </div>
+                    </div>
+                    <div class="invoice-totals">
+                        <div class="invoice-totals-row">
+                            <span>Subtotal:</span>
+                            <span>@GetSubtotalNeto().ToString("C")</span>
+                        </div>
+                        <div class="invoice-totals-row">
+                            <span>IVA 21%:</span>
+                            <span>@GetIvaTotal().ToString("C")</span>
+                        </div>
+                        <div class="invoice-totals-row total">
+                            <span>TOTAL:</span>
+                            <span>@GetTotalVenta().ToString("C")</span>
+                        </div>
+                    </div>
+                </div>
+                
+                @* Importe en letras *@
+                <div class="invoice-letters">
+                    <strong>Son:</strong> @NumeroALetras(GetTotalVenta())
+                </div>
+            </div>
+            
+            @* Botones de acción *@
+            <div class="invoice-actions">
+                <button type="button" class="btn btn-secondary" @onclick="CloseInvoicePreview">
+                    <span class="oi oi-x me-1"></span> Cerrar
+                </button>
+                <button type="button" class="btn btn-primary" @onclick="PrintInvoice">
+                    <span class="oi oi-print me-1"></span> Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .invoice-preview-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        padding: 20px;
+    }
+    
+    .invoice-container {
+        background: white;
+        width: 100%;
+        max-width: 850px;
+        max-height: 90vh;
+        overflow-y: auto;
+        border-radius: 8px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    .invoice-paper {
+        padding: 35px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 12px;
+        color: #333;
+    }
+    
+    .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 25px;
+        padding-bottom: 20px;
+        border-bottom: 3px solid #1976d2;
+    }
+    
+    .invoice-company {
+        flex: 1;
+    }
+    
+    .invoice-company h1 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1976d2;
+        margin: 0 0 8px 0;
+    }
+    
+    .invoice-company p {
+        margin: 2px 0;
+        color: #555;
+        font-size: 10px;
+    }
+    
+    .invoice-type-box {
+        text-align: center;
+        border: 3px solid #333;
+        padding: 8px 25px;
+        margin: 0 25px;
+        border-radius: 4px;
+        background: #f8f9fa;
+    }
+    
+    .invoice-type-letter {
+        font-size: 36px;
+        font-weight: bold;
+        line-height: 1;
+        color: #333;
+    }
+    
+    .invoice-type-code {
+        font-size: 9px;
+        color: #666;
+        margin-top: 2px;
+    }
+    
+    .invoice-info {
+        text-align: right;
+        flex: 1;
+    }
+    
+    .invoice-info h2 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 0 0 10px 0;
+        text-transform: uppercase;
+    }
+    
+    .invoice-info p {
+        margin: 3px 0;
+        font-size: 10px;
+    }
+    
+    .invoice-parties {
+        display: flex;
+        gap: 30px;
+        margin-bottom: 25px;
+        padding: 18px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 8px;
+        border-left: 4px solid #1976d2;
+    }
+    
+    .invoice-seller, .invoice-buyer {
+        flex: 1;
+    }
+    
+    .invoice-parties h3 {
+        font-size: 11px;
+        font-weight: 600;
+        color: #1976d2;
+        margin: 0 0 10px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .invoice-parties p {
+        margin: 4px 0;
+        font-size: 11px;
+    }
+    
+    .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 25px;
+    }
+    
+    .invoice-table thead {
+        background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+        color: white;
+    }
+    
+    .invoice-table th {
+        padding: 12px 8px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    .invoice-table th:nth-child(n+3) {
+        text-align: right;
+    }
+    
+    .invoice-table td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 11px;
+    }
+    
+    .invoice-table td:nth-child(n+3) {
+        text-align: right;
+    }
+    
+    .invoice-table tbody tr:nth-child(even) {
+        background: #fafafa;
+    }
+    
+    .invoice-table tbody tr:hover {
+        background: #f0f4f8;
+    }
+    
+    .invoice-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 30px;
+    }
+    
+    .invoice-qr {
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .invoice-qr-placeholder {
+        width: 90px;
+        height: 90px;
+        border: 2px solid #ddd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border-radius: 6px;
+    }
+    
+    .invoice-qr-info {
+        font-size: 10px;
+        color: #666;
+    }
+    
+    .invoice-qr-info p {
+        margin: 4px 0;
+    }
+    
+    .invoice-totals {
+        min-width: 220px;
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+    }
+    
+    .invoice-totals-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 12px;
+    }
+    
+    .invoice-totals-row.total {
+        border-bottom: none;
+        border-top: 2px solid #1976d2;
+        margin-top: 8px;
+        padding-top: 12px;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1976d2;
+    }
+    
+    .invoice-letters {
+        margin-top: 20px;
+        padding: 12px 15px;
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border-radius: 6px;
+        font-size: 11px;
+        color: #333;
+        border-left: 4px solid #1976d2;
+    }
+    
+    .invoice-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding: 18px 35px;
+        background: #f8f9fa;
+        border-top: 1px solid #e0e0e0;
+    }
+    
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+        .invoice-preview-modal,
+        .invoice-preview-modal * {
+            visibility: visible;
+        }
+        .invoice-preview-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: white;
+            padding: 0;
+        }
+        .invoice-container {
+            max-height: none;
+            box-shadow: none;
+            border-radius: 0;
+        }
+        .invoice-actions {
+            display: none !important;
+        }
+    }
+</style>
 
 @code {
     private List<Sale> _sales = new();
@@ -886,6 +1367,7 @@
     private Dictionary<string, LineEditState> _lineEditStates = new();
     private Dictionary<string, GridLineEditState> _gridEditStates = new();
     private List<decimal> _ivasDisponibles = new() { 0m, 10.5m, 21m, 27m };
+    private bool _showInvoicePreview = false;
     private bool _autoGenerandoNumero = false; // Bandera para saber si estamos auto-generando el número
     private bool _showCanCreateSaleAlert = true;
     
@@ -1245,9 +1727,29 @@
                     if (v.Id.ToString().Contains(searchLower))
                         return true;
                     
-                    // Buscar por nombre
-                    var nameLower = v.Name.ToLower();
-                    return searchTerms.All(term => nameLower.Contains(term));
+                    // Buscar por nombre completo
+                    var nombreLower = v.Name.ToLower();
+                    if (nombreLower.Contains(searchLower))
+                        return true;
+                    
+                    // Buscar por términos individuales (descripción parcial)
+                    if (searchTerms.Length > 0)
+                    {
+                        return searchTerms.All(term => nombreLower.Contains(term));
+                    }
+                    
+                    return false;
+                })
+                .OrderBy(v => 
+                {
+                    // Priorizar coincidencias exactas de ID
+                    if (int.TryParse(searchLower, out int codigo) && v.Id == codigo)
+                        return 0;
+                    // Luego coincidencias que empiezan con el texto
+                    if (v.Name.ToLower().StartsWith(searchLower))
+                        return 1;
+                    // Finalmente otras coincidencias
+                    return 2;
                 })
                 .Take(10)
                 .ToList();
@@ -2137,6 +2639,162 @@
             _currentPage = page;
             StateHasChanged();
         }
+    }
+
+    private async Task PrintHistorial()
+    {
+        _showInvoicePreview = true;
+        await Task.CompletedTask;
+    }
+    
+    private void CloseInvoicePreview()
+    {
+        _showInvoicePreview = false;
+    }
+    
+    private async Task PrintInvoice()
+    {
+        await JSRuntime.InvokeVoidAsync("window.print");
+    }
+    
+    private string GetTipoComprobanteLetra()
+    {
+        return _saleDraft.TipoComprobante switch
+        {
+            "FA" => "A",
+            "FB" => "B",
+            "FC" => "C",
+            "NCA" => "A",
+            "NCB" => "B",
+            "NCC" => "C",
+            "NDA" => "A",
+            "NDB" => "B",
+            "NDC" => "C",
+            _ => "X"
+        };
+    }
+    
+    private string GetTipoComprobanteNombre()
+    {
+        return _saleDraft.TipoComprobante switch
+        {
+            "FA" => "FACTURA",
+            "FB" => "FACTURA",
+            "FC" => "FACTURA",
+            "NCA" or "NCB" or "NCC" => "NOTA DE CRÉDITO",
+            "NDA" or "NDB" or "NDC" => "NOTA DE DÉBITO",
+            "NPV" => "NOTA DE PEDIDO",
+            "REM" => "REMITO",
+            _ => "COMPROBANTE"
+        };
+    }
+    
+    private string GetNumeroComprobanteFormateado()
+    {
+        var sucursal = _saleDraft.SucursalId?.ToString("D4") ?? "0001";
+        var numero = _saleDraft.NumeroComprobante ?? "00000000";
+        if (int.TryParse(numero, out var num))
+        {
+            numero = num.ToString("D8");
+        }
+        return $"{sucursal}-{numero}";
+    }
+    
+    private string GetClienteNombre()
+    {
+        var cliente = _customers.FirstOrDefault(c => c.Id == _saleDraft.CustomerId);
+        return cliente?.Name ?? "CONSUMIDOR FINAL";
+    }
+    
+    private string GetClienteDireccion()
+    {
+        var cliente = _customers.FirstOrDefault(c => c.Id == _saleDraft.CustomerId);
+        return cliente?.Address ?? "—";
+    }
+    
+    private string GetClienteCuit()
+    {
+        var cliente = _customers.FirstOrDefault(c => c.Id == _saleDraft.CustomerId);
+        return cliente?.Cuit ?? "—";
+    }
+    
+    private string GetVendedorNombre()
+    {
+        var vendedor = _vendors.FirstOrDefault(v => v.Id == _saleDraft.VendorId);
+        return vendedor?.Name ?? "—";
+    }
+    
+    private decimal GetSubtotalNeto()
+    {
+        return _newLines.Sum(l => l.LineTotal) / 1.21m;
+    }
+    
+    private decimal GetIvaTotal()
+    {
+        return _newLines.Sum(l => l.LineTotal) - GetSubtotalNeto();
+    }
+    
+    private string NumeroALetras(decimal numero)
+    {
+        var entero = (long)Math.Floor(numero);
+        var centavos = (int)Math.Round((numero - entero) * 100);
+        
+        string[] unidades = { "", "un", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve" };
+        string[] especiales = { "diez", "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho", "diecinueve" };
+        string[] decenas = { "", "", "veinte", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa" };
+        string[] centenas = { "", "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos" };
+        
+        string ConvertirGrupo(int n)
+        {
+            if (n == 0) return "";
+            if (n == 100) return "cien";
+            
+            var resultado = "";
+            var c = n / 100;
+            var resto = n % 100;
+            
+            if (c > 0) resultado = centenas[c] + " ";
+            
+            if (resto >= 10 && resto <= 19)
+            {
+                resultado += especiales[resto - 10];
+            }
+            else
+            {
+                var d = resto / 10;
+                var u = resto % 10;
+                
+                if (d > 0)
+                {
+                    resultado += decenas[d];
+                    if (u > 0)
+                    {
+                        resultado += d == 2 ? "i" : " y ";
+                        resultado += unidades[u];
+                    }
+                }
+                else if (u > 0)
+                {
+                    resultado += unidades[u];
+                }
+            }
+            
+            return resultado.Trim();
+        }
+        
+        if (entero == 0) return "cero pesos con " + centavos.ToString("D2") + "/100";
+        
+        var miles = (int)(entero / 1000);
+        var unidad = (int)(entero % 1000);
+        
+        var texto = "";
+        if (miles > 0)
+        {
+            texto = miles == 1 ? "mil " : ConvertirGrupo(miles) + " mil ";
+        }
+        texto += ConvertirGrupo(unidad);
+        
+        return texto.Trim() + " pesos con " + centavos.ToString("D2") + "/100";
     }
 
     private void ClearGrid()

@@ -1,68 +1,223 @@
-.navbar-toggler {
-    background-color: rgba(255, 255, 255, 0.1);
+/* Material Design 3 Navigation Bar - Dark Theme */
+.material-nav-menu {
+    height: 100% !important;
+    background-color: #1e1e1e !important;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3) !important;
+    overflow: hidden;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100vh;
 }
 
-.top-row {
+/* Header del menú */
+.material-nav-header {
     height: 3.5rem;
-    background-color: rgba(0,0,0,0.4);
+    background-color: rgb(75, 33, 189);
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.navbar-brand {
+.material-nav-brand {
     font-size: 1.1rem;
+    font-weight: 600;
+    color: #ffffff !important;
+    text-decoration: none !important;
+    transition: opacity 0.2s ease;
 }
 
-.oi {
-    width: 2rem;
-    font-size: 1.1rem;
-    vertical-align: text-top;
-    top: -2px;
+.material-nav-brand:hover {
+    opacity: 0.8;
 }
 
-.nav-item {
-    font-size: 0.9rem;
-    padding-bottom: 0.5rem;
+.material-nav {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 8px 0 !important;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    list-style: none !important;
+    margin: 0 !important;
 }
 
-    .nav-item:first-of-type {
-        padding-top: 1rem;
+/* Navigation Item - Dark Theme Style */
+.material-nav-item {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 12px 16px !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    text-decoration: none !important;
+    color: #ffffff !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    cursor: pointer !important;
+    min-height: 48px !important;
+    overflow: hidden !important;
+    border: none !important;
+    background: transparent !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Ripple Effect */
+.material-nav-item::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.12);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.material-nav-item:hover::before {
+    width: 200px;
+    height: 200px;
+}
+
+/* Hover State */
+.material-nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #ffffff !important;
+}
+
+/* Active State - Purple Background */
+.material-nav-item.active,
+.material-nav-item:focus,
+.material-nav-item.active:focus {
+    background-color: rgb(75, 33, 189) !important;
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+
+/* Icon - Dark Theme */
+.material-nav-icon {
+    width: 24px !important;
+    height: 24px !important;
+    margin-right: 12px !important;
+    margin-left: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 20px !important;
+    flex-shrink: 0 !important;
+    transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+    z-index: 1 !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.material-nav-item.active .material-nav-icon {
+    color: #ffffff !important;
+}
+
+/* Label - Dark Theme */
+.material-nav-label {
+    flex: 1 !important;
+    white-space: nowrap !important;
+    transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+    z-index: 1 !important;
+    letter-spacing: 0.1px !important;
+    display: block !important;
+    color: #ffffff !important;
+}
+
+/* Active Indicator - Hidden in dark theme (using background instead) */
+.material-nav-indicator {
+    display: none;
+}
+
+/* Scrollbar - Black Theme Style */
+.material-nav::-webkit-scrollbar {
+    width: 8px;
+}
+
+.material-nav::-webkit-scrollbar-track {
+    background: #000000;
+}
+
+.material-nav::-webkit-scrollbar-thumb {
+    background-color: #333333;
+    border-radius: 4px;
+}
+
+.material-nav::-webkit-scrollbar-thumb:hover {
+    background-color: #444444;
+}
+
+/* Firefox scrollbar */
+.material-nav {
+    scrollbar-width: thin;
+    scrollbar-color: #333333 #000000;
+}
+
+/* Submenu Styles */
+.material-nav-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.material-nav-parent {
+    cursor: pointer !important;
+}
+
+.material-nav-arrow {
+    margin-left: auto !important;
+    font-size: 12px !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+    transition: transform 0.2s ease;
+}
+
+.material-nav-submenu {
+    background-color: rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        max-height: 0;
+        opacity: 0;
     }
-
-    .nav-item:last-of-type {
-        padding-bottom: 1rem;
+    to {
+        max-height: 500px;
+        opacity: 1;
     }
-
-    .nav-item ::deep a {
-        color: #d7d7d7;
-        border-radius: 4px;
-        height: 3rem;
-        display: flex;
-        align-items: center;
-        line-height: 3rem;
-    }
-
-.nav-item ::deep a.active {
-    background-color: rgba(255,255,255,0.25);
-    color: white;
 }
 
-.nav-item ::deep a:hover {
-    background-color: rgba(255,255,255,0.1);
-    color: white;
+.material-nav-subitem {
+    padding-left: 48px !important;
+    font-size: 13px !important;
+    min-height: 40px !important;
 }
 
-@media (min-width: 641px) {
-    .navbar-toggler {
+.material-nav-subitem .material-nav-icon {
+    margin-left: 0 !important;
+    font-size: 18px !important;
+}
+
+/* Responsive */
+@media (max-width: 640.98px) {
+    .material-nav-menu {
         display: none;
-    }
-
-    .collapse {
-        /* Never collapse the sidebar for wide screens */
-        display: block;
-    }
-    
-    .nav-scrollable {
-        /* Allow sidebar to scroll for tall menus */
-        height: calc(100vh - 3.5rem);
-        overflow-y: auto;
     }
 }

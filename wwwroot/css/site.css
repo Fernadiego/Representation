@@ -66,3 +66,147 @@ a, .btn-link {
     .blazor-error-boundary::after {
         content: "An error has occurred."
     }
+
+/* Material Design Navigation Menu - Dark Theme Global Styles */
+.material-nav-menu {
+    height: 100% !important;
+    background-color: #1e1e1e !important;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3) !important;
+    overflow: hidden;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.material-nav-header {
+    height: 3.5rem;
+    background-color: rgb(75, 33, 189);
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.material-nav-brand {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #ffffff !important;
+    text-decoration: none !important;
+}
+
+.material-nav {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 8px 0 !important;
+    height: 100% !important;
+    list-style: none !important;
+    margin: 0 !important;
+}
+
+.material-nav-item {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 12px 16px !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    text-decoration: none !important;
+    color: #ffffff !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    cursor: pointer !important;
+    min-height: 48px !important;
+    overflow: hidden !important;
+    border: none !important;
+    background: transparent !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.material-nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #ffffff !important;
+}
+
+.material-nav-item.active {
+    background-color: rgb(75, 33, 189) !important;
+    color: #ffffff !important;
+    font-weight: 500 !important;
+}
+
+.material-nav-icon {
+    width: 24px !important;
+    height: 24px !important;
+    margin-right: 12px !important;
+    margin-left: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 20px !important;
+    flex-shrink: 0 !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.material-nav-item.active .material-nav-icon {
+    color: #ffffff !important;
+}
+
+.material-nav-label {
+    flex: 1 !important;
+    white-space: nowrap !important;
+    display: block !important;
+    color: #ffffff !important;
+}
+
+.material-nav-indicator {
+    display: none;
+}
+
+/* Submenu Styles */
+.material-nav-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.material-nav-parent {
+    cursor: pointer !important;
+}
+
+.material-nav-arrow {
+    margin-left: auto !important;
+    font-size: 12px !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+    transition: transform 0.2s ease;
+}
+
+.material-nav-submenu {
+    background-color: rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        max-height: 0;
+        opacity: 0;
+    }
+    to {
+        max-height: 500px;
+        opacity: 1;
+    }
+}
+
+.material-nav-subitem {
+    padding-left: 48px !important;
+    font-size: 13px !important;
+    min-height: 40px !important;
+}
+
+.material-nav-subitem .material-nav-icon {
+    margin-left: 0 !important;
+    font-size: 18px !important;
+}

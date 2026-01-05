@@ -1,6 +1,9 @@
 @page "/productos"
+@using System.IO
 @inject CommerceService Commerce
 @inject TenantState TenantState
+@inject BlazorVentas.Services.ImageService ImageService
+@inject IJSRuntime JSRuntime
 @implements IDisposable
 
 <PageTitle>Productos</PageTitle>
@@ -28,7 +31,7 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col">
-                            <label class="form-label">Precio</label>
+                            <label class="form-label">Precio Base</label>
                             <InputNumber class="form-control" @bind-Value="_editingProduct.UnitPrice" />
                         </div>
                         <div class="col">
@@ -45,6 +48,56 @@
                                 <option value="@supplier.Id">@supplier.Name</option>
                             }
                         </InputSelect>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Listas de Precios</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small">Lista 1</label>
+                                <InputNumber class="form-control form-control-sm" @bind-Value="_editingProduct.PrecioLista1" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Lista 2</label>
+                                <InputNumber class="form-control form-control-sm" @bind-Value="_editingProduct.PrecioLista2" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Lista 3</label>
+                                <InputNumber class="form-control form-control-sm" @bind-Value="_editingProduct.PrecioLista3" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Lista 4</label>
+                                <InputNumber class="form-control form-control-sm" @bind-Value="_editingProduct.PrecioLista4" />
+                            </div>
+                        </div>
+                        <small class="text-muted">Si no se especifican, se usará el precio base</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Imagen del Producto</label>
+                        <div class="d-flex align-items-center gap-3">
+                            @if (!string.IsNullOrWhiteSpace(_editingProduct.ImagePath))
+                            {
+                                <img src="@_editingProduct.ImagePath" alt="Vista previa" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover; border-radius: 50%;" />
+                            }
+                            else
+                            {
+                                <div class="img-thumbnail d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; border-radius: 50%; background-color: #f0f0f0;">
+                                    <span class="text-muted small">Sin imagen</span>
+                                </div>
+                            }
+                            <div class="flex-grow-1">
+                                <InputFile OnChange="HandleImageUpload" accept="image/*" class="form-control" />
+                                <small class="text-muted">Formatos permitidos: JPG, PNG, GIF, WEBP</small>
+                            </div>
+                        </div>
+                        @if (_isUploading)
+                        {
+                            <div class="mt-2">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Subiendo...</span>
+                                </div>
+                                <span class="ms-2 small">Subiendo imagen...</span>
+                            </div>
+                        }
                     </div>
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">Guardar</button>
@@ -107,6 +160,7 @@
     private List<Product> _products = new();
     private List<Supplier> _suppliers = new();
     private Product _editingProduct = new();
+    private bool _isUploading = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -147,7 +201,11 @@
         _editingProduct = new Product
         {
             CompanyId = TenantState.CurrentCompanyId ?? 0,
-            SupplierId = _suppliers.FirstOrDefault()?.Id ?? 0
+            SupplierId = _suppliers.FirstOrDefault()?.Id ?? 0,
+            PrecioLista1 = 0,
+            PrecioLista2 = 0,
+            PrecioLista3 = 0,
+            PrecioLista4 = 0
         };
     }
 
@@ -161,8 +219,82 @@
             Sku = product.Sku,
             UnitPrice = product.UnitPrice,
             Stock = product.Stock,
-            SupplierId = product.SupplierId
+            SupplierId = product.SupplierId,
+            PrecioLista1 = product.PrecioLista1,
+            PrecioLista2 = product.PrecioLista2,
+            PrecioLista3 = product.PrecioLista3,
+            PrecioLista4 = product.PrecioLista4,
+            ImagePath = product.ImagePath
         };
+    }
+
+    private async Task HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        if (e.File == null || e.File.Size == 0)
+            return;
+
+        // Validar que es un archivo de imagen
+        var validExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        var extension = Path.GetExtension(e.File.Name).ToLowerInvariant();
+        if (!validExtensions.Contains(extension))
+        {
+            return;
+        }
+
+        // Si es un producto nuevo (sin ID), mostrar mensaje de que debe guardar primero
+        if (_editingProduct.Id == 0)
+        {
+            // Guardar el producto primero para obtener el ID
+            if (TenantState.CurrentCompanyId is not int companyId)
+            {
+                return;
+            }
+            
+            // Guardar para obtener el ID
+            await Commerce.SaveProductAsync(companyId, _editingProduct);
+            await LoadData(resetForm: false);
+            
+            // Buscar el producto guardado por SKU y nombre
+            var savedProduct = _products.FirstOrDefault(p => 
+                p.Sku == _editingProduct.Sku && 
+                p.Name == _editingProduct.Name &&
+                p.CompanyId == companyId);
+            
+            if (savedProduct != null)
+            {
+                _editingProduct.Id = savedProduct.Id;
+            }
+            else
+            {
+                return; // No se pudo encontrar el producto guardado
+            }
+        }
+
+        _isUploading = true;
+        StateHasChanged();
+
+        try
+        {
+            // Leer el stream del archivo
+            using var stream = e.File.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB max
+            var imagePath = await ImageService.SaveProductImageAsync(stream, _editingProduct.Id, e.File.Name);
+            
+            if (!string.IsNullOrWhiteSpace(imagePath))
+            {
+                _editingProduct.ImagePath = imagePath;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Error al subir imagen - en producción podrías mostrar un mensaje al usuario
+            Console.WriteLine($"Error al subir imagen: {ex.Message}");
+        }
+        finally
+        {
+            _isUploading = false;
+            StateHasChanged();
+        }
     }
 
     private async Task SaveProduct()
