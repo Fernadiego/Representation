@@ -44,7 +44,6 @@ public class Articulo
     public int? BultosXCamada { get; set; }
     public int? BultosXPalet { get; set; }
     public bool Inhabilitado { get; set; }
-    public string? MensajeSobreArticulo { get; set; }
 
     public List<ClientePrecio> PreciosEspeciales { get; set; } = new();
     public List<VentaLinea> VentasLineas { get; set; } = new();

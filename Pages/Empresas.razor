@@ -2,108 +2,576 @@
 @inject CommerceService Commerce
 @inject TenantState TenantState
 
-<PageTitle>Empresas</PageTitle>
+<PageTitle>ABM Empresas</PageTitle>
 
-<h1 class="mb-4">Empresas</h1>
+<style>
+    .card-header h5 {
+        font-size: 0.875rem;
+    }
+    
+    .filter-label {
+        font-size: 0.8125rem;
+        color: #6c757d;
+        margin-right: 0.5rem;
+    }
+    .filter-select {
+        font-size: 0.875rem;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        padding: 0.375rem 2rem 0.375rem 0.75rem;
+        background-color: white;
+        min-width: 140px;
+    }
+    .filter-select:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    
+    .companies-table {
+        margin: 0;
+    }
+    .companies-table th {
+        font-size: 0.8125rem;
+    }
+    .companies-table tbody tr {
+        height: 40px !important;
+    }
+    .companies-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa !important;
+    }
+    .companies-table tbody tr:nth-child(odd) {
+        background-color: #ffffff !important;
+    }
+    .companies-table tbody tr:hover {
+        background-color: #e9ecef !important;
+    }
+    .companies-table tbody tr.table-active {
+        background-color: #cfe2ff !important;
+    }
+    .companies-table tbody td {
+        padding: 0.3rem 0.5rem !important;
+        vertical-align: middle !important;
+    }
+    
+    /* Company Cell */
+    .company-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .company-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    .company-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .company-name {
+        font-weight: 600;
+        color: #3c4858;
+        text-decoration: none;
+        margin-bottom: 2px;
+    }
+    .company-name:hover {
+        color: #7c3aed;
+    }
+    .company-cuit {
+        font-size: 0.75rem;
+        color: #9ca3af;
+    }
+    
+    /* Status Badges */
+    .status-badge {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    .status-badge::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+    .status-active {
+        background-color: #d1fae5;
+        color: #059669;
+    }
+    .status-active::before {
+        background-color: #10b981;
+    }
+    .status-inactive {
+        background-color: #fee2e2;
+        color: #dc2626;
+    }
+    .status-inactive::before {
+        background-color: #ef4444;
+    }
+    
+    /* Actions */
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: #6c757d;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .action-btn:hover {
+        background-color: #f1f3f5;
+    }
+    .action-btn.edit:hover {
+        color: #7c3aed;
+        background-color: #ede9fe;
+    }
+    .action-btn.delete:hover {
+        color: #dc3545;
+        background-color: #fee2e2;
+    }
+    
+    /* Search */
+    .search-box {
+        position: relative;
+    }
+    .search-box input {
+        padding-left: 2.5rem;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        font-size: 0.875rem;
+        height: 38px;
+        width: 250px;
+    }
+    .search-box input:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    .search-box .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+    }
+    
+    /* Modal Styles */
+    .modal-header {
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        color: white;
+        border-radius: 8px 8px 0 0;
+    }
+    .modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+    .modal-content {
+        border: none;
+        border-radius: 8px;
+    }
+    .form-label {
+        font-weight: 500;
+        color: #4b5563;
+        font-size: 0.875rem;
+    }
+    .form-control, .form-select {
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    .empty-state-icon {
+        font-size: 4rem;
+        color: #d1d5db;
+        margin-bottom: 1rem;
+    }
+    .empty-state-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #4b5563;
+        margin-bottom: 0.5rem;
+    }
+    .empty-state-text {
+        color: #9ca3af;
+        margin-bottom: 1.5rem;
+    }
 
-<div class="row g-4">
-    <div class="col-lg-4">
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <h5 class="mb-0">@(_editingCompany.Id == 0 ? "Nueva empresa" : $"Editar #{_editingCompany.Id}")</h5>
-            </div>
-            <div class="card-body">
-                <EditForm Model="_editingCompany" OnValidSubmit="SaveCompany">
-                    <DataAnnotationsValidator />
-                    <ValidationSummary />
+    /* Pagination */
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-top: 1px solid #e9ecef;
+    }
+    .pagination-info {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .pagination-buttons {
+        display: flex;
+        gap: 0.25rem;
+    }
+    .page-btn {
+        min-width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #dee2e6;
+        background: white;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .page-btn:hover:not(.active):not(:disabled) {
+        background-color: #f8f9fa;
+        border-color: #7c3aed;
+        color: #7c3aed;
+    }
+    .page-btn.active {
+        background: #7c3aed;
+        border-color: #7c3aed;
+        color: white;
+    }
+    .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
 
-                    <div class="mb-3">
-                        <label class="form-label">Nombre</label>
-                        <InputText class="form-control" @bind-Value="_editingCompany.Name" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Color de fondo</label>
-                        <InputText type="color" class="form-control form-control-color" @bind-Value="_companyColor" />
-                        <small class="form-text text-muted">Seleccione un color para identificar la empresa. Si no se selecciona, se usará el color azul BBVA por defecto.</small>
-                    </div>
-
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">Guardar</button>
-                        <button type="button" class="btn btn-outline-secondary" @onclick="ResetForm">Cancelar</button>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
+<!-- Filters -->
+<div class="card shadow-sm">
+    <div class="card-header py-2">
+        <h5 class="mb-0">
+            <span class="oi oi-briefcase me-2"></span>ABM Empresas
+        </h5>
     </div>
-
-    <div class="col-lg-8">
-        <div class="card shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Listado de empresas</h5>
-                <span class="badge text-bg-secondary">@_companies.Count registros</span>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th style="width: 15%;">Id</th>
-                            <th>Nombre</th>
-                            <th style="width: 25%;"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (!_companies.Any())
-                        {
-                            <tr>
-                                <td colspan="3" class="text-center text-muted py-4">Sin empresas</td>
-                            </tr>
-                        }
-                        else
-                        {
-                            @foreach (var company in _companies)
-                            {
-                                <tr>
-                                    <td>@company.Id</td>
-                                    <td>@company.Name</td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-link" @onclick="() => EditCompany(company)">Editar</button>
-                                        <button class="btn btn-sm btn-link text-danger" @onclick="() => DeleteCompany(company.Id)">Eliminar</button>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <span class="filter-label">Filtrar por:</span>
+                
+                <select class="filter-select" @bind="_filterEstado">
+                    <option value="">Todos los Estados</option>
+                    <option value="active">Activo</option>
+                    <option value="inactive">Inactivo</option>
+                </select>
+                
+                <div class="search-box">
+                    <span class="search-icon oi oi-magnifying-glass"></span>
+                    <input type="text" class="form-control" placeholder="Buscar empresas..." 
+                           @bind="_searchText" @bind:event="oninput" />
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Companies Table -->
+<div class="card shadow-sm mt-3" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+    <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <h5 class="mb-0">Listado de Empresas</h5>
+        <button class="btn btn-sm btn-primary" @onclick="OpenAddModal">
+            <span class="oi oi-plus"></span> Agregar Empresa
+        </button>
+    </div>
+    @if (_loading)
+    {
+        <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (!FilteredCompanies.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <span class="oi oi-briefcase"></span>
+            </div>
+            <h3 class="empty-state-title">No hay empresas</h3>
+            <p class="empty-state-text">Comienza agregando tu primera empresa.</p>
+            <button class="btn btn-sm btn-primary" @onclick="OpenAddModal">
+                <span class="oi oi-plus"></span> Agregar Empresa
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 companies-table">
+                <thead>
+                    <tr>
+                        <th>Empresa</th>
+                        <th>Dirección</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Estado</th>
+                        <th style="width: 100px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var company in PaginatedCompanies)
+                    {
+                        var avatarColor = string.IsNullOrWhiteSpace(company.Color) ? "#7c3aed" : company.Color;
+                        <tr>
+                            <td>
+                                <div class="company-cell">
+                                    <div class="company-avatar" style="background: linear-gradient(135deg, @avatarColor 0%, @DarkenColor(avatarColor) 100%);">
+                                        @GetInitials(company.RazonSocial)
+                                    </div>
+                                    <div class="company-info">
+                                        <a href="#" class="company-name" @onclick:preventDefault @onclick="() => EditCompany(company)">
+                                            @if (!string.IsNullOrEmpty(company.Codigo))
+                                            {
+                                                <span class="text-muted">[@company.Codigo]</span>
+                                            }
+                                            @company.RazonSocial
+                                        </a>
+                                        <span class="company-cuit">CUIT: @(company.CUIT ?? "—")</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@(company.Direccion ?? "—")</td>
+                            <td>@(company.Telefono ?? "—")</td>
+                            <td>@(company.Email ?? "—")</td>
+                            <td>
+                                <span class="status-badge @(company.Activo ? "status-active" : "status-inactive")">
+                                    @(company.Activo ? "Activo" : "Inactivo")
+                                </span>
+                            </td>
+                            <td>
+                                <button class="action-btn edit" title="Editar" @onclick="() => EditCompany(company)">
+                                    <span class="oi oi-pencil"></span>
+                                </button>
+                                <button class="action-btn delete" title="Eliminar" @onclick="() => ConfirmDelete(company)">
+                                    <span class="oi oi-trash"></span>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        @if (TotalPages > 1)
+        {
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Mostrando @((_currentPage - 1) * _pageSize + 1) a @Math.Min(_currentPage * _pageSize, FilteredCompanies.Count()) de @FilteredCompanies.Count() empresas
+                </div>
+                <div class="pagination-buttons">
+                    <button class="page-btn" disabled="@(_currentPage == 1)" @onclick="() => GoToPage(_currentPage - 1)">
+                        <span class="oi oi-chevron-left"></span>
+                    </button>
+                    @for (int i = 1; i <= TotalPages; i++)
+                    {
+                        var pageNum = i;
+                        <button class="page-btn @(pageNum == _currentPage ? "active" : "")" @onclick="() => GoToPage(pageNum)">
+                            @pageNum
+                        </button>
+                    }
+                    <button class="page-btn" disabled="@(_currentPage == TotalPages)" @onclick="() => GoToPage(_currentPage + 1)">
+                        <span class="oi oi-chevron-right"></span>
+                    </button>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<!-- Modal Agregar/Editar -->
+@if (_showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <span class="oi oi-briefcase me-2"></span>
+                        @(_editingCompany.Id == 0 ? "Nueva Empresa" : "Editar Empresa")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <EditForm Model="_editingCompany" OnValidSubmit="SaveCompany">
+                    <DataAnnotationsValidator />
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Código</label>
+                                <InputText class="form-control" @bind-Value="_editingCompany.Codigo" />
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Razón Social <span class="text-danger">*</span></label>
+                                <InputText class="form-control" @bind-Value="_editingCompany.RazonSocial" />
+                                <ValidationMessage For="@(() => _editingCompany.RazonSocial)" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">CUIT</label>
+                                <InputText class="form-control" @bind-Value="_editingCompany.CUIT" placeholder="XX-XXXXXXXX-X" />
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label">Dirección</label>
+                                <InputText class="form-control" @bind-Value="_editingCompany.Direccion" />
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono</label>
+                                <InputText class="form-control" @bind-Value="_editingCompany.Telefono" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <InputText class="form-control" type="email" @bind-Value="_editingCompany.Email" />
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Color identificativo</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <InputText type="color" class="form-control form-control-color" style="width: 50px;" @bind-Value="_companyColor" />
+                                    <span class="text-muted small">Para identificar la empresa visualmente</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="form-check">
+                                    <InputCheckbox class="form-check-input" @bind-Value="_editingCompany.Activo" id="chkActivo" />
+                                    <label class="form-check-label" for="chkActivo">Empresa activa</label>
+                                </div>
+                            </div>
+                            
+                            @if (_editingCompany.Id > 0)
+                            {
+                                <div class="col-12">
+                                    <hr class="my-2" />
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <small class="text-muted">
+                                                <span class="oi oi-calendar me-1"></span>
+                                                <strong>Fecha Alta:</strong> @(_editingCompany.FechaAlta?.ToString("dd/MM/yyyy HH:mm") ?? "—")
+                                            </small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted">
+                                                <span class="oi oi-clock me-1"></span>
+                                                <strong>Última Modificación:</strong> @(_editingCompany.FechaModificacion?.ToString("dd/MM/yyyy HH:mm") ?? "—")
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseModal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <span class="oi oi-check me-1"></span> Guardar
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Confirmar Eliminación -->
+@if (_showDeleteModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <span class="oi oi-warning me-2"></span>Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => _showDeleteModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea eliminar la empresa <strong>@_companyToDelete?.RazonSocial</strong>?</p>
+                    <p class="text-muted small mb-0">Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="() => _showDeleteModal = false">Cancelar</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteConfirmed">
+                        <span class="oi oi-trash me-1"></span> Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<Company> _companies = new();
     private Company _editingCompany = new();
-    private string _companyColor = "#004481"; // Valor por defecto azul BBVA
+    private Company? _companyToDelete;
+    private string _companyColor = "#7c3aed";
+    private bool _showModal = false;
+    private bool _showDeleteModal = false;
+    private bool _loading = true;
+    private string _searchText = "";
+    private string _filterEstado = "";
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+
+    private IEnumerable<Company> FilteredCompanies => _companies
+        .Where(c => string.IsNullOrEmpty(_searchText) || 
+                    c.RazonSocial.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                    (c.Codigo?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (c.CUIT?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (c.Email?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false))
+        .Where(c => string.IsNullOrEmpty(_filterEstado) ||
+                    (_filterEstado == "active" && c.Activo) ||
+                    (_filterEstado == "inactive" && !c.Activo))
+        .OrderBy(c => c.RazonSocial);
+
+    private IEnumerable<Company> PaginatedCompanies => FilteredCompanies
+        .Skip((_currentPage - 1) * _pageSize)
+        .Take(_pageSize);
+
+    private int TotalPages => (int)Math.Ceiling(FilteredCompanies.Count() / (double)_pageSize);
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadData(resetForm: true);
+        await LoadData();
     }
 
-    private async Task LoadData(bool resetForm = false)
+    private async Task LoadData()
     {
+        _loading = true;
         _companies = await Commerce.GetCompaniesAsync();
-
-        if (resetForm)
-        {
-            ResetForm();
-        }
+        _loading = false;
     }
 
-    private void ResetForm()
+    private void OpenAddModal()
     {
-        _editingCompany = new Company();
-        _companyColor = "#004481"; // Resetear al color por defecto
+        _editingCompany = new Company { Activo = true };
+        _companyColor = "#7c3aed";
+        _showModal = true;
     }
 
     private void EditCompany(Company company)
@@ -111,21 +579,35 @@
         _editingCompany = new Company
         {
             Id = company.Id,
-            Name = company.Name,
+            Codigo = company.Codigo,
+            RazonSocial = company.RazonSocial,
+            CUIT = company.CUIT,
+            Direccion = company.Direccion,
+            Telefono = company.Telefono,
+            Email = company.Email,
+            Activo = company.Activo,
+            FechaAlta = company.FechaAlta,
+            FechaModificacion = company.FechaModificacion,
             Color = company.Color
         };
-        _companyColor = string.IsNullOrWhiteSpace(company.Color) ? "#004481" : company.Color;
+        _companyColor = string.IsNullOrWhiteSpace(company.Color) ? "#7c3aed" : company.Color;
+        _showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+        _editingCompany = new Company();
     }
 
     private async Task SaveCompany()
     {
-        // Asignar el color seleccionado (si es el color por defecto, guardar como null)
-        _editingCompany.Color = _companyColor == "#004481" ? null : _companyColor;
-        
+        _editingCompany.Color = _companyColor;
         await Commerce.SaveCompanyAsync(_editingCompany);
-        await LoadData(resetForm: true);
+        await LoadData();
+        CloseModal();
 
-        // Si la empresa editada es la actualmente seleccionada, actualizar el TenantState
+        // Actualizar TenantState si es la empresa actual
         if (TenantState.CurrentCompanyId == _editingCompany.Id)
         {
             var updated = _companies.FirstOrDefault(c => c.Id == _editingCompany.Id);
@@ -136,21 +618,67 @@
         }
     }
 
-    private async Task DeleteCompany(int companyId)
+    private void ConfirmDelete(Company company)
     {
-        await Commerce.DeleteCompanyAsync(companyId);
-        await LoadData(resetForm: true);
+        _companyToDelete = company;
+        _showDeleteModal = true;
+    }
 
-        // Si se borró la empresa actual, seleccionar otra (si existe)
-        if (TenantState.CurrentCompanyId == companyId)
+    private async Task DeleteConfirmed()
+    {
+        if (_companyToDelete != null)
         {
-            var first = _companies.FirstOrDefault();
-            if (first is not null)
+            await Commerce.DeleteCompanyAsync(_companyToDelete.Id);
+            await LoadData();
+            
+            // Si se borró la empresa actual, seleccionar otra
+            if (TenantState.CurrentCompanyId == _companyToDelete.Id)
             {
-                TenantState.SetCompany(first);
+                var first = _companies.FirstOrDefault();
+                if (first is not null)
+                {
+                    TenantState.SetCompany(first);
+                }
             }
+        }
+        _showDeleteModal = false;
+        _companyToDelete = null;
+    }
+
+    private void GoToPage(int page)
+    {
+        _currentPage = Math.Max(1, Math.Min(page, TotalPages));
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        return name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
+    private string DarkenColor(string hexColor)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(hexColor) || !hexColor.StartsWith("#") || hexColor.Length < 7)
+                return "#5b21b6";
+
+            int r = Convert.ToInt32(hexColor.Substring(1, 2), 16);
+            int g = Convert.ToInt32(hexColor.Substring(3, 2), 16);
+            int b = Convert.ToInt32(hexColor.Substring(5, 2), 16);
+
+            r = (int)(r * 0.7);
+            g = (int)(g * 0.7);
+            b = (int)(b * 0.7);
+
+            return $"#{r:X2}{g:X2}{b:X2}";
+        }
+        catch
+        {
+            return "#5b21b6";
         }
     }
 }
-
-

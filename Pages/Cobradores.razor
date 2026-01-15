@@ -1,11 +1,11 @@
-@page "/vendedores"
+@page "/cobradores"
 @using Microsoft.AspNetCore.Components.Web
 @using BlazorVentas.Data
 @inject CommerceService Commerce
 @inject IJSRuntime JSRuntime
 @inject BlazorVentas.Services.SessionService SessionService
 
-<PageTitle>ABM Vendedores</PageTitle>
+<PageTitle>ABM Cobradores</PageTitle>
 
 <style>
     .card-header h5 {
@@ -26,47 +26,47 @@
         min-width: 140px;
     }
     .filter-select:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
     }
     
-    .vendedores-table {
+    .cobradores-table {
         margin: 0;
     }
-    .vendedores-table th {
+    .cobradores-table th {
         font-size: 0.8125rem;
     }
-    .vendedores-table tbody tr {
+    .cobradores-table tbody tr {
         height: 40px !important;
     }
-    .vendedores-table tbody tr:nth-child(even) {
+    .cobradores-table tbody tr:nth-child(even) {
         background-color: #f8f9fa !important;
     }
-    .vendedores-table tbody tr:nth-child(odd) {
+    .cobradores-table tbody tr:nth-child(odd) {
         background-color: #ffffff !important;
     }
-    .vendedores-table tbody tr:hover {
+    .cobradores-table tbody tr:hover {
         background-color: #e9ecef !important;
     }
-    .vendedores-table tbody tr.table-active {
-        background-color: #cfe2ff !important;
+    .cobradores-table tbody tr.table-active {
+        background-color: #fef3c7 !important;
     }
-    .vendedores-table tbody td {
+    .cobradores-table tbody td {
         padding: 0.3rem 0.5rem !important;
         vertical-align: middle !important;
     }
     
-    /* Vendedor Cell */
-    .vendedor-cell {
+    /* Cobrador Cell */
+    .cobrador-cell {
         display: flex;
         align-items: center;
         gap: 0.75rem;
     }
-    .vendedor-avatar {
+    .cobrador-avatar {
         width: 36px;
         height: 36px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -74,32 +74,22 @@
         font-weight: 600;
         font-size: 0.875rem;
     }
-    .vendedor-info {
+    .cobrador-info {
         display: flex;
         flex-direction: column;
     }
-    .vendedor-name {
+    .cobrador-name {
         font-weight: 600;
         color: #3c4858;
         text-decoration: none;
         margin-bottom: 2px;
     }
-    .vendedor-name:hover {
-        color: #3b82f6;
+    .cobrador-name:hover {
+        color: #f59e0b;
     }
-    .vendedor-code {
+    .cobrador-code {
         font-size: 0.75rem;
         color: #9ca3af;
-    }
-    
-    /* Comision Badge */
-    .comision-badge {
-        font-size: 0.75rem;
-        font-weight: 500;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        background-color: #dbeafe;
-        color: #1d4ed8;
     }
     
     /* Status Badges */
@@ -151,8 +141,8 @@
         background-color: #f1f3f5;
     }
     .action-btn.edit:hover {
-        color: #3b82f6;
-        background-color: #dbeafe;
+        color: #f59e0b;
+        background-color: #fef3c7;
     }
     .action-btn.delete:hover {
         color: #dc3545;
@@ -160,12 +150,12 @@
     }
     
     /* Checkbox */
-    .vendedor-checkbox {
+    .cobrador-checkbox {
         width: 18px;
         height: 18px;
         border-radius: 4px;
         cursor: pointer;
-        accent-color: #3b82f6;
+        accent-color: #f59e0b;
     }
     
     /* Pagination */
@@ -200,12 +190,12 @@
     }
     .page-btn:hover:not(.active):not(:disabled) {
         background-color: #f8f9fa;
-        border-color: #3b82f6;
-        color: #3b82f6;
+        border-color: #f59e0b;
+        color: #f59e0b;
     }
     .page-btn.active {
-        background: #3b82f6;
-        border-color: #3b82f6;
+        background: #f59e0b;
+        border-color: #f59e0b;
         color: white;
     }
     .page-btn:disabled {
@@ -226,8 +216,8 @@
         width: 250px;
     }
     .search-box input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
     }
     .search-box .search-icon {
         position: absolute;
@@ -239,7 +229,7 @@
     
     /* Modal Styles */
     .modal-header {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         color: white;
         border-radius: 8px 8px 0 0;
     }
@@ -260,8 +250,8 @@
         font-size: 0.875rem;
     }
     .form-control:focus, .form-select:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
     }
     
     /* Empty State */
@@ -286,12 +276,12 @@
     }
     
     .btn-primary {
-        background-color: #3b82f6 !important;
-        border-color: #3b82f6 !important;
+        background-color: #f59e0b !important;
+        border-color: #f59e0b !important;
     }
     .btn-primary:hover {
-        background-color: #2563eb !important;
-        border-color: #2563eb !important;
+        background-color: #d97706 !important;
+        border-color: #d97706 !important;
     }
 </style>
 
@@ -299,7 +289,7 @@
 <div class="card shadow-sm">
     <div class="card-header py-2">
         <h5 class="mb-0">
-            <span class="oi oi-briefcase me-2"></span>ABM Vendedores
+            <span class="oi oi-credit-card me-2"></span>ABM Cobradores
         </h5>
     </div>
     <div class="card-body py-3">
@@ -315,7 +305,7 @@
                 
                 <div class="search-box">
                     <span class="search-icon oi oi-magnifying-glass"></span>
-                    <input type="text" class="form-control" placeholder="Buscar vendedores..." 
+                    <input type="text" class="form-control" placeholder="Buscar cobradores..." 
                            @bind="_searchText" @bind:event="oninput" />
                 </div>
             </div>
@@ -323,88 +313,84 @@
     </div>
 </div>
 
-<!-- Vendedores Table -->
+<!-- Cobradores Table -->
 <div class="card shadow-sm mt-3" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
     <div class="card-header d-flex justify-content-between align-items-center py-2">
-        <h5 class="mb-0">Listado de Vendedores</h5>
+        <h5 class="mb-0">Listado de Cobradores</h5>
         <button class="btn btn-sm btn-primary" @onclick="OpenAddModal">
-            <span class="oi oi-plus"></span> Agregar Vendedor
+            <span class="oi oi-plus"></span> Agregar Cobrador
         </button>
     </div>
     @if (_loading)
     {
         <div class="d-flex justify-content-center align-items-center py-5">
-            <div class="spinner-border text-primary" role="status">
+            <div class="spinner-border" style="color: #f59e0b;" role="status">
                 <span class="visually-hidden">Cargando...</span>
             </div>
         </div>
     }
-    else if (!FilteredVendedores.Any())
+    else if (!FilteredCobradores.Any())
     {
         <div class="empty-state">
             <div class="empty-state-icon">
-                <span class="oi oi-briefcase"></span>
+                <span class="oi oi-credit-card"></span>
             </div>
-            <h3 class="empty-state-title">No hay vendedores</h3>
-            <p class="empty-state-text">Comienza agregando tu primer vendedor.</p>
+            <h3 class="empty-state-title">No hay cobradores</h3>
+            <p class="empty-state-text">Comienza agregando tu primer cobrador.</p>
             <button class="btn btn-sm btn-primary" @onclick="OpenAddModal">
-                <span class="oi oi-plus"></span> Agregar Vendedor
+                <span class="oi oi-plus"></span> Agregar Cobrador
             </button>
         </div>
     }
     else
     {
         <div class="table-responsive">
-            <table class="table align-middle mb-0 vendedores-table">
+            <table class="table align-middle mb-0 cobradores-table">
                 <thead>
                     <tr>
                         <th style="width: 40px;">
-                            <input type="checkbox" class="vendedor-checkbox" 
+                            <input type="checkbox" class="cobrador-checkbox" 
                                    @bind="_selectAll" @bind:after="ToggleSelectAll" />
                         </th>
-                        <th>Vendedor</th>
+                        <th>Cobrador</th>
                         <th>Código</th>
-                        <th>Comisión</th>
                         <th>Fecha Alta</th>
                         <th>Estado</th>
                         <th style="width: 100px;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var vendedor in PaginatedVendedores)
+                    @foreach (var cobrador in PaginatedCobradores)
                     {
                         <tr>
                             <td>
-                                <input type="checkbox" class="vendedor-checkbox" 
-                                       checked="@_selectedVendedores.Contains(vendedor.Id)"
-                                       @onchange="() => ToggleVendedorSelection(vendedor.Id)" />
+                                <input type="checkbox" class="cobrador-checkbox" 
+                                       checked="@_selectedCobradores.Contains(cobrador.Id)"
+                                       @onchange="() => ToggleCobradorSelection(cobrador.Id)" />
                             </td>
                             <td>
-                                <div class="vendedor-cell">
-                                    <div class="vendedor-avatar">
-                                        @GetInitials(vendedor.Nombre)
+                                <div class="cobrador-cell">
+                                    <div class="cobrador-avatar">
+                                        @GetInitials(cobrador.Nombre)
                                     </div>
-                                    <div class="vendedor-info">
-                                        <a href="#" class="vendedor-name" @onclick:preventDefault @onclick="() => OpenEditModal(vendedor)">@vendedor.Nombre</a>
-                                        <span class="vendedor-code">ID: @vendedor.Id</span>
+                                    <div class="cobrador-info">
+                                        <a href="#" class="cobrador-name" @onclick:preventDefault @onclick="() => OpenEditModal(cobrador)">@cobrador.Nombre</a>
+                                        <span class="cobrador-code">ID: @cobrador.Id</span>
                                     </div>
                                 </div>
                             </td>
-                            <td>@vendedor.Codigo</td>
+                            <td>@cobrador.Codigo</td>
+                            <td>@cobrador.FechaAlta.ToString("dd/MM/yyyy")</td>
                             <td>
-                                <span class="comision-badge">@vendedor.ComisionPorcentaje.ToString("N2")%</span>
-                            </td>
-                            <td>@vendedor.FechaAlta.ToString("dd/MM/yyyy")</td>
-                            <td>
-                                <span class="status-badge @(vendedor.Activo ? "status-active" : "status-inactive")">
-                                    @(vendedor.Activo ? "Activo" : "Inactivo")
+                                <span class="status-badge @(cobrador.Activo ? "status-active" : "status-inactive")">
+                                    @(cobrador.Activo ? "Activo" : "Inactivo")
                                 </span>
                             </td>
                             <td>
-                                <button class="action-btn edit" title="Editar" @onclick="() => OpenEditModal(vendedor)">
+                                <button class="action-btn edit" title="Editar" @onclick="() => OpenEditModal(cobrador)">
                                     <span class="oi oi-pencil"></span>
                                 </button>
-                                <button class="action-btn delete" title="Eliminar" @onclick="() => ConfirmDelete(vendedor)">
+                                <button class="action-btn delete" title="Eliminar" @onclick="() => ConfirmDelete(cobrador)">
                                     <span class="oi oi-trash"></span>
                                 </button>
                             </td>
@@ -417,7 +403,7 @@
         <!-- Pagination -->
         <div class="pagination-container">
             <div class="pagination-info">
-                Mostrando @((_currentPage - 1) * _pageSize + 1) a @Math.Min(_currentPage * _pageSize, FilteredVendedores.Count()) de @FilteredVendedores.Count() vendedores
+                Mostrando @((_currentPage - 1) * _pageSize + 1) a @Math.Min(_currentPage * _pageSize, FilteredCobradores.Count()) de @FilteredCobradores.Count() cobradores
             </div>
             <div class="pagination-buttons">
                 <button class="page-btn" disabled="@(_currentPage == 1)" @onclick="() => GoToPage(_currentPage - 1)">
@@ -447,7 +433,7 @@
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <span class="oi @(_isEditing ? "oi-pencil" : "oi-plus") me-2"></span>
-                        @(_isEditing ? "Editar Vendedor" : "Nuevo Vendedor")
+                        @(_isEditing ? "Editar Cobrador" : "Nuevo Cobrador")
                     </h5>
                     <button type="button" class="btn-close" @onclick="CloseModal"></button>
                 </div>
@@ -460,36 +446,32 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Código <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" @bind="_editVendedor.Codigo" placeholder="Ej: VND001" maxlength="20" />
+                            <input type="text" class="form-control" @bind="_editCobrador.Codigo" placeholder="Ej: COB001" maxlength="20" />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Estado</label>
                             <div class="form-check form-switch mt-2">
-                                <input class="form-check-input" type="checkbox" @bind="_editVendedor.Activo" style="width: 3em; height: 1.5em;">
-                                <label class="form-check-label ms-2">@(_editVendedor.Activo ? "Activo" : "Inactivo")</label>
+                                <input class="form-check-input" type="checkbox" @bind="_editCobrador.Activo" style="width: 3em; height: 1.5em;">
+                                <label class="form-check-label ms-2">@(_editCobrador.Activo ? "Activo" : "Inactivo")</label>
                             </div>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Nombre <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" @bind="_editVendedor.Nombre" placeholder="Nombre del vendedor" maxlength="100" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Comisión (%)</label>
-                            <input type="number" class="form-control" @bind="_editVendedor.ComisionPorcentaje" step="0.01" min="0" max="100" />
+                            <input type="text" class="form-control" @bind="_editCobrador.Nombre" placeholder="Nombre del cobrador" maxlength="100" />
                         </div>
                         @if (_isEditing)
                         {
                             <div class="col-md-6">
                                 <label class="form-label">Fecha de Alta</label>
-                                <input type="text" class="form-control" value="@_editVendedor.FechaAlta.ToString("dd/MM/yyyy HH:mm")" disabled />
+                                <input type="text" class="form-control" value="@_editCobrador.FechaAlta.ToString("dd/MM/yyyy HH:mm")" disabled />
                             </div>
                         }
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" @onclick="SaveVendedor">
-                        <span class="oi oi-check me-1"></span>@(_isEditing ? "Guardar Cambios" : "Crear Vendedor")
+                    <button type="button" class="btn btn-primary" @onclick="SaveCobrador">
+                        <span class="oi oi-check me-1"></span>@(_isEditing ? "Guardar Cambios" : "Crear Cobrador")
                     </button>
                 </div>
             </div>
@@ -510,12 +492,12 @@
                     <button type="button" class="btn-close btn-close-white" @onclick="() => _showDeleteModal = false"></button>
                 </div>
                 <div class="modal-body">
-                    <p>¿Está seguro que desea eliminar al vendedor <strong>@_deleteVendedor?.Nombre</strong>?</p>
+                    <p>¿Está seguro que desea eliminar al cobrador <strong>@_deleteCobrador?.Nombre</strong>?</p>
                     <p class="text-muted small">Esta acción no se puede deshacer.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="() => _showDeleteModal = false">Cancelar</button>
-                    <button type="button" class="btn btn-danger" @onclick="DeleteVendedor">
+                    <button type="button" class="btn btn-danger" @onclick="DeleteCobrador">
                         <span class="oi oi-trash me-1"></span>Eliminar
                     </button>
                 </div>
@@ -525,7 +507,7 @@
 }
 
 @code {
-    private List<VendedorItem> _vendedores = new();
+    private List<CobradorItem> _cobradores = new();
     private bool _loading = true;
     private string _searchText = string.Empty;
     private string _filterEstado = string.Empty;
@@ -536,32 +518,32 @@
     
     // Selección
     private bool _selectAll;
-    private HashSet<int> _selectedVendedores = new();
+    private HashSet<int> _selectedCobradores = new();
     
     // Modal
     private bool _showModal = false;
     private bool _isEditing = false;
-    private VendedorItem _editVendedor = new();
+    private CobradorItem _editCobrador = new();
     private string? _modalError;
     
     // Modal eliminar
     private bool _showDeleteModal = false;
-    private VendedorItem? _deleteVendedor;
+    private CobradorItem? _deleteCobrador;
     
-    private IEnumerable<VendedorItem> FilteredVendedores => _vendedores
-        .Where(v => string.IsNullOrEmpty(_searchText) || 
-                    v.Nombre.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-                    v.Codigo.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
-        .Where(v => string.IsNullOrEmpty(_filterEstado) ||
-                    (_filterEstado == "active" && v.Activo) ||
-                    (_filterEstado == "inactive" && !v.Activo))
-        .OrderBy(v => v.Nombre);
+    private IEnumerable<CobradorItem> FilteredCobradores => _cobradores
+        .Where(c => string.IsNullOrEmpty(_searchText) || 
+                    c.Nombre.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                    c.Codigo.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
+        .Where(c => string.IsNullOrEmpty(_filterEstado) ||
+                    (_filterEstado == "active" && c.Activo) ||
+                    (_filterEstado == "inactive" && !c.Activo))
+        .OrderBy(c => c.Nombre);
     
-    private IEnumerable<VendedorItem> PaginatedVendedores => FilteredVendedores
+    private IEnumerable<CobradorItem> PaginatedCobradores => FilteredCobradores
         .Skip((_currentPage - 1) * _pageSize)
         .Take(_pageSize);
     
-    private int TotalPages => Math.Max(1, (int)Math.Ceiling(FilteredVendedores.Count() / (double)_pageSize));
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(FilteredCobradores.Count() / (double)_pageSize));
     
     protected override async Task OnInitializedAsync()
     {
@@ -575,7 +557,7 @@
         
         try
         {
-            _vendedores = await Commerce.GetVendedoresAbmAsync();
+            _cobradores = await Commerce.GetCobradoresAsync();
         }
         finally
         {
@@ -602,50 +584,48 @@
     {
         if (_selectAll)
         {
-            _selectedVendedores = FilteredVendedores.Select(v => v.Id).ToHashSet();
+            _selectedCobradores = FilteredCobradores.Select(c => c.Id).ToHashSet();
         }
         else
         {
-            _selectedVendedores.Clear();
+            _selectedCobradores.Clear();
         }
     }
     
-    private void ToggleVendedorSelection(int vendedorId)
+    private void ToggleCobradorSelection(int cobradorId)
     {
-        if (_selectedVendedores.Contains(vendedorId))
-            _selectedVendedores.Remove(vendedorId);
+        if (_selectedCobradores.Contains(cobradorId))
+            _selectedCobradores.Remove(cobradorId);
         else
-            _selectedVendedores.Add(vendedorId);
+            _selectedCobradores.Add(cobradorId);
         
-        _selectAll = FilteredVendedores.All(v => _selectedVendedores.Contains(v.Id));
+        _selectAll = FilteredCobradores.All(c => _selectedCobradores.Contains(c.Id));
     }
     
     private void OpenAddModal()
     {
         _isEditing = false;
-        var nextCodigo = _vendedores.Any() ? $"VND{(_vendedores.Max(v => v.Id) + 1):D3}" : "VND001";
-        _editVendedor = new VendedorItem
+        var nextCodigo = _cobradores.Any() ? $"COB{(_cobradores.Max(c => c.Id) + 1):D3}" : "COB001";
+        _editCobrador = new CobradorItem
         {
             Codigo = nextCodigo,
             Activo = true,
-            ComisionPorcentaje = 0,
             FechaAlta = DateTime.Now
         };
         _modalError = null;
         _showModal = true;
     }
     
-    private void OpenEditModal(VendedorItem vendedor)
+    private void OpenEditModal(CobradorItem cobrador)
     {
         _isEditing = true;
-        _editVendedor = new VendedorItem
+        _editCobrador = new CobradorItem
         {
-            Id = vendedor.Id,
-            Codigo = vendedor.Codigo,
-            Nombre = vendedor.Nombre,
-            ComisionPorcentaje = vendedor.ComisionPorcentaje,
-            Activo = vendedor.Activo,
-            FechaAlta = vendedor.FechaAlta
+            Id = cobrador.Id,
+            Codigo = cobrador.Codigo,
+            Nombre = cobrador.Nombre,
+            Activo = cobrador.Activo,
+            FechaAlta = cobrador.FechaAlta
         };
         _modalError = null;
         _showModal = true;
@@ -657,30 +637,30 @@
         _modalError = null;
     }
     
-    private async Task SaveVendedor()
+    private async Task SaveCobrador()
     {
-        if (string.IsNullOrWhiteSpace(_editVendedor.Codigo))
+        if (string.IsNullOrWhiteSpace(_editCobrador.Codigo))
         {
             _modalError = "El código es requerido";
             return;
         }
         
-        if (string.IsNullOrWhiteSpace(_editVendedor.Nombre))
+        if (string.IsNullOrWhiteSpace(_editCobrador.Nombre))
         {
             _modalError = "El nombre es requerido";
             return;
         }
         
         // Validar código único
-        if (!_isEditing && _vendedores.Any(v => v.Codigo.Equals(_editVendedor.Codigo, StringComparison.OrdinalIgnoreCase)))
+        if (!_isEditing && _cobradores.Any(c => c.Codigo.Equals(_editCobrador.Codigo, StringComparison.OrdinalIgnoreCase)))
         {
-            _modalError = "Ya existe un vendedor con ese código";
+            _modalError = "Ya existe un cobrador con ese código";
             return;
         }
         
-        if (_isEditing && _vendedores.Any(v => v.Id != _editVendedor.Id && v.Codigo.Equals(_editVendedor.Codigo, StringComparison.OrdinalIgnoreCase)))
+        if (_isEditing && _cobradores.Any(c => c.Id != _editCobrador.Id && c.Codigo.Equals(_editCobrador.Codigo, StringComparison.OrdinalIgnoreCase)))
         {
-            _modalError = "Ya existe otro vendedor con ese código";
+            _modalError = "Ya existe otro cobrador con ese código";
             return;
         }
         
@@ -688,7 +668,7 @@
         {
             var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
             var usuarioId = token != null ? await SessionService.GetUsuarioIdAsync(token) : null;
-            await Commerce.SaveVendedorAsync(_editVendedor, usuarioId);
+            await Commerce.SaveCobradorAsync(_editCobrador, usuarioId);
             
             await LoadDataAsync();
             CloseModal();
@@ -699,24 +679,24 @@
         }
     }
     
-    private void ConfirmDelete(VendedorItem vendedor)
+    private void ConfirmDelete(CobradorItem cobrador)
     {
-        _deleteVendedor = vendedor;
+        _deleteCobrador = cobrador;
         _showDeleteModal = true;
     }
     
-    private async Task DeleteVendedor()
+    private async Task DeleteCobrador()
     {
-        if (_deleteVendedor == null) return;
+        if (_deleteCobrador == null) return;
         
         try
         {
             var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
             var usuarioId = token != null ? await SessionService.GetUsuarioIdAsync(token) : null;
-            await Commerce.DeleteVendedorAsync(_deleteVendedor.Id, usuarioId);
+            await Commerce.DeleteCobradorAsync(_deleteCobrador.Id, usuarioId);
             await LoadDataAsync();
             _showDeleteModal = false;
-            _deleteVendedor = null;
+            _deleteCobrador = null;
         }
         catch (Exception ex)
         {
@@ -724,3 +704,4 @@
         }
     }
 }
+

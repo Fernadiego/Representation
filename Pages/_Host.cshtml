@@ -13,13 +13,6 @@
     <link href="css/site.css" rel="stylesheet" />
     <link href="BlazorVentas.styles.css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="favicon.png"/>
-    <script type="importmap">
-    {
-        "imports": {
-            "@@material/web": "https://unpkg.com/@@material/web@latest/"
-        }
-    }
-    </script>
     <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
 </head>
 <body>
@@ -36,9 +29,6 @@
         <a class="dismiss">🗙</a>
     </div>
 
-    <script type="module">
-        import '@@material/web/outlined-text-field.js';
-    </script>
     <script src="_framework/blazor.server.js"></script>
 </body>
 </html>

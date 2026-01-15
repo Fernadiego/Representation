@@ -2,15 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BlazorVentas.Data;
 
-public class Company
-{
-    public int Id { get; set; }
-
-    [Required, StringLength(100)]
-    public string Name { get; set; } = string.Empty;
-
-    public string? Color { get; set; }
-}
+// Company está en BlazorVentas.Data.Models.Company
 
 public class Supplier
 {
@@ -57,7 +49,10 @@ public class CustomerBranch
 public class Customer
 {
     public int Id { get; set; }
+    
+    [Required(ErrorMessage = "Debe seleccionar una empresa")]
     public int CompanyId { get; set; }
+    public string? CompanyNombre { get; set; }
 
     // Códigos
     public int CodigoCliente { get; set; }
@@ -106,9 +101,15 @@ public class Customer
     // Lista de Precio (1, 2, 3, 4)
     public int ListaPrecio { get; set; } = 1;
 
-    // Descuento (ABM)
+    // Descuento (ABM antiguo)
     public int? CodigoDescuentoId { get; set; }
     public string? CodigoDescuentoNombre { get; set; }
+    
+    // Descuento ABM (nuevo)
+    public int? DescuentoABMId { get; set; }
+    public string? DescuentoABMNombre { get; set; }
+    public string? DescuentoABMDescripcion { get; set; }
+    public decimal DescuentoABMPorcentaje { get; set; }
 
     // Tipo Cliente (ABM)
     public int? TipoClienteId { get; set; }
@@ -233,11 +234,10 @@ public class Product
 
     // Estado
     public bool Inhabilitado { get; set; }
-    public string? MensajeSobreArticulo { get; set; }
-    public bool TieneMensaje { get; set; }
 
     // Imagen del producto
     public string? ImagePath { get; set; }
+
 }
 
 // Clases auxiliares para ABMs en memoria
@@ -284,25 +284,41 @@ public class DescuentoItem
 public class TipoClienteItem
 {
     public int Id { get; set; }
-    public string Nombre { get; set; } = string.Empty;
+    public string Codigo { get; set; } = string.Empty;
+    public string Nombre { get; set; } = string.Empty; // Mapea a Descripcion
+    public string CondicionIva { get; set; } = string.Empty;
+    public bool RequiereCuit { get; set; }
+    public bool Activo { get; set; } = true;
+    public DateTime FechaAlta { get; set; }
+    public DateTime FechaModificacion { get; set; }
 }
 
 public class ZonaItem
 {
     public int Id { get; set; }
-    public string Nombre { get; set; } = string.Empty;
+    public string Codigo { get; set; } = string.Empty;
+    public string Descripcion { get; set; } = string.Empty;
+    public bool Activo { get; set; } = true;
+    public DateTime FechaAlta { get; set; } = DateTime.Now;
 }
 
 public class VendedorItem
 {
     public int Id { get; set; }
+    public string Codigo { get; set; } = string.Empty;
     public string Nombre { get; set; } = string.Empty;
+    public decimal ComisionPorcentaje { get; set; }
+    public bool Activo { get; set; } = true;
+    public DateTime FechaAlta { get; set; } = DateTime.Now;
 }
 
 public class CobradorItem
 {
     public int Id { get; set; }
+    public string Codigo { get; set; } = string.Empty;
     public string Nombre { get; set; } = string.Empty;
+    public bool Activo { get; set; } = true;
+    public DateTime FechaAlta { get; set; } = DateTime.Now;
 }
 
 public class ClaseClienteItem
@@ -311,21 +327,35 @@ public class ClaseClienteItem
     public string Nombre { get; set; } = string.Empty;
 }
 
-// ABM para Comprobantes
+// ABM para Comprobantes (AMRO_Comprobantes)
 public class ComprobanteItem
 {
     public int Id { get; set; }
     public string Codigo { get; set; } = string.Empty;
     public string Descripcion { get; set; } = string.Empty;
-    public int Tipo { get; set; }
-    public string Numeracion { get; set; } = string.Empty;
+    public string? Letra { get; set; }
+    public string? CodigoAfip { get; set; }
+    public bool RequiereCuit { get; set; } = true;
+    public bool RequiereStock { get; set; } = true;
+    public bool Afectacc { get; set; } = true;
+    public bool Activo { get; set; } = true;
+    public DateTime? FechaAlta { get; set; }
+    public DateTime? FechaModificacion { get; set; }
 }
 
 // ABM para Tipos Comprobantes
 public class TipoComprobanteItem
 {
     public int Id { get; set; }
-    public string Nombre { get; set; } = string.Empty;
+    public string Codigo { get; set; } = string.Empty;
+    public string Descripcion { get; set; } = string.Empty;
+    public string? Letra { get; set; }
+    public string? CodigoAfip { get; set; }
+    public bool RequiereCuit { get; set; }
+    public bool RequiereStock { get; set; }
+    public bool Afectacc { get; set; }
+    public bool Activo { get; set; } = true;
+    public DateTime? FechaAlta { get; set; }
 }
 
 public class SaleLine
@@ -341,7 +371,10 @@ public class SaleLine
     [Range(0, 999999)]
     public decimal UnitPrice { get; set; }
 
-    public decimal LineTotal => Quantity * UnitPrice;
+    public decimal? Descuento { get; set; }
+    public decimal? Percepcion { get; set; }
+
+    public decimal LineTotal => (Quantity * UnitPrice) - (Descuento ?? 0) + (Percepcion ?? 0);
 }
 
 public class Sale
@@ -365,9 +398,12 @@ public class Sale
     public string NumeroComprobante { get; set; } = string.Empty;
     public int? SucursalId { get; set; }
     public DateTime? Vencimiento { get; set; }
+    public DateTime? FechaEnvio { get; set; }
     public string? ComprobOriginado { get; set; }
     public string? RemitoAsociado { get; set; }
     public string Estado { get; set; } = "Cargado"; // Cargado, Eliminada, Cancelada
+    public bool Anulado { get; set; }
+    public decimal TotalPagado { get; set; }
 
     public List<SaleLine> Lines { get; set; } = new();
 

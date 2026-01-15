@@ -30,6 +30,11 @@ public class Cliente
     public int ListaPrecio { get; set; } = 1; // Lista 1,2,3,4
     public int? CodigoDescuentoId { get; set; }
     public Descuento? CodigoDescuento { get; set; }
+    
+    // Descuento ABM (nuevo)
+    public int? DescuentoABMId { get; set; }
+    public DescuentoABM? DescuentoABM { get; set; }
+    
     public int? TipoClienteId { get; set; }
     public TipoCliente? TipoCliente { get; set; }
     public int CondicionPago { get; set; } // Días

@@ -7,17 +7,32 @@
 <PageTitle>BlazorVentas</PageTitle>
 
 <style>
-    /* Botón Empresa estilo BBVA con Popover */
+    /* Botón Empresa con color dinámico */
     .tenant-selector {
         position: relative;
         margin-left: auto;
         margin-right: 0 !important;
         padding-right: 0 !important;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .company-avatar-header {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.875rem;
+        flex-shrink: 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     
     .btn-empresa-bbva {
-        background-color: #004481 !important;
-        border-color: #004481 !important;
         color: #ffffff !important;
         font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
         font-size: 0.85rem !important;
@@ -28,21 +43,20 @@
         min-width: 150px !important;
         text-decoration: none !important;
         cursor: pointer !important;
+        border: none !important;
     }
     
     .btn-empresa-bbva:hover {
-        background-color: #003366 !important;
-        border-color: #003366 !important;
+        filter: brightness(0.85) !important;
         color: #ffffff !important;
         text-decoration: none !important;
     }
     
     .btn-empresa-bbva:focus,
     .btn-empresa-bbva:active {
-        background-color: #002d5a !important;
-        border-color: #002d5a !important;
+        filter: brightness(0.8) !important;
         color: #ffffff !important;
-        box-shadow: 0 0 0 4px rgba(0, 68, 129, 0.35) !important;
+        box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.15) !important;
         outline: none !important;
     }
     
@@ -181,7 +195,7 @@
     </div>
 
     <main>
-        <div class="top-row" style="padding-left: 1.5rem; padding-right: 0.5rem;">
+        <div class="top-row" style="padding-left: 1.5rem; padding-right: 1rem;">
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <button class="btn btn-sm btn-primary" @onclick="ToggleSidebar" aria-label="@(_sidebarCollapsed ? "Mostrar menú" : "Ocultar menú")">
                     <span class="oi @( _sidebarCollapsed ? "oi-chevron-right" : "oi-chevron-left")" aria-hidden="true"></span>
@@ -193,9 +207,13 @@
                 {
                     <div class="popover-overlay" @onclick="CloseEmpresaPopover"></div>
                 }
+                <div class="company-avatar-header" style="background: linear-gradient(135deg, @GetCompanyColor() 0%, @DarkenColor(GetCompanyColor()) 100%);">
+                    @GetCompanyInitials()
+                </div>
                 <a tabindex="0" 
                    class="btn btn-lg btn-empresa-bbva" 
                    role="button"
+                   style="background-color: @GetCompanyColor();"
                    @onclick="ToggleEmpresaPopover">
                     @(string.IsNullOrEmpty(_companySearch) ? "Empresa" : _companySearch)
                 </a>
@@ -203,7 +221,7 @@
                 {
                     <div class="empresa-popover">
                         <div class="empresa-popover-header">
-                            <h6 class="empresa-popover-title">@(TenantState.CurrentCompany?.Name ?? "Empresa")</h6>
+                            <h6 class="empresa-popover-title">@(TenantState.CurrentCompany?.RazonSocial ?? "Empresa")</h6>
                         </div>
                         <div class="empresa-popover-body empresa-popover-info">
                             @if (TenantState.CurrentCompany != null)
@@ -258,7 +276,7 @@
                              style="border-left: 4px solid @companyColor;"
                              @onclick="() => SelectCompanyFromFab(company)">
                             <div class="fab-menu-item-color" style="background-color: @companyColor;"></div>
-                            <span class="fab-menu-item-name">@company.Name</span>
+                            <span class="fab-menu-item-name">@company.RazonSocial</span>
                             @if (isSelected)
                             {
                                 <span class="fab-menu-item-check">
@@ -290,7 +308,7 @@
         {
             var selected = TenantState.CurrentCompany ?? _companies.First();
             TenantState.SetCompany(selected);
-            _companySearch = selected.Name;
+            _companySearch = selected.RazonSocial;
         }
 
         UpdateSuggestions();
@@ -318,7 +336,35 @@
 
     private string GetCompanyColor()
     {
-        return "rgb(98, 0, 238)"; // Color fijo para el FAB button
+        var color = TenantState.CurrentCompany?.Color;
+        return string.IsNullOrWhiteSpace(color) ? "#004481" : color;
+    }
+
+    private string GetCompanyInitials()
+    {
+        var name = TenantState.CurrentCompany?.RazonSocial;
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        return name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
+    private string DarkenColor(string hexColor)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(hexColor) || !hexColor.StartsWith("#") || hexColor.Length < 7)
+                return "#003366";
+            int r = Convert.ToInt32(hexColor.Substring(1, 2), 16);
+            int g = Convert.ToInt32(hexColor.Substring(3, 2), 16);
+            int b = Convert.ToInt32(hexColor.Substring(5, 2), 16);
+            r = (int)(r * 0.7);
+            g = (int)(g * 0.7);
+            b = (int)(b * 0.7);
+            return $"#{r:X2}{g:X2}{b:X2}";
+        }
+        catch { return "#003366"; }
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
@@ -372,7 +418,7 @@
             return;
         }
 
-        var exactMatch = _companies.FirstOrDefault(c => c.Name.Equals(_companySearch, StringComparison.OrdinalIgnoreCase));
+        var exactMatch = _companies.FirstOrDefault(c => c.RazonSocial.Equals(_companySearch, StringComparison.OrdinalIgnoreCase));
         var company = exactMatch ?? _filteredCompanies.FirstOrDefault();
         if (company is not null)
         {
@@ -382,7 +428,7 @@
 
     private void SelectCompany(Company company)
     {
-        _companySearch = company.Name;
+        _companySearch = company.RazonSocial;
         _showSuggestions = false;
         TenantState.SetCompany(company);
         UpdateSuggestions();
@@ -407,7 +453,7 @@
     private void SelectCompanyFromFab(Company company)
     {
         TenantState.SetCompany(company);
-        _companySearch = company.Name;
+        _companySearch = company.RazonSocial;
         CloseFabMenu();
     }
     
@@ -426,7 +472,7 @@
     private void SelectCompanyFromPopover(Company company)
     {
         TenantState.SetCompany(company);
-        _companySearch = company.Name;
+        _companySearch = company.RazonSocial;
         _showEmpresaPopover = false;
         StateHasChanged();
     }
@@ -441,13 +487,13 @@
         else
         {
             _filteredCompanies = _companies
-                .Where(c => c.Name.Contains(term, StringComparison.OrdinalIgnoreCase))
+                .Where(c => c.RazonSocial.Contains(term, StringComparison.OrdinalIgnoreCase))
                 .Take(5)
                 .ToList();
         }
 
         _showSuggestions = !string.IsNullOrWhiteSpace(term) && _filteredCompanies.Any() &&
-            !_filteredCompanies.Any(c => c.Name.Equals(term, StringComparison.OrdinalIgnoreCase));
+            !_filteredCompanies.Any(c => c.RazonSocial.Equals(term, StringComparison.OrdinalIgnoreCase));
     }
 
     private void OnCompanyFieldFocus()

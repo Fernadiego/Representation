@@ -4,6 +4,7 @@ using BlazorVentas.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlazorVentas.Migrations
 {
     [DbContext(typeof(CommerceDbContext))]
-    partial class CommerceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260111213843_AddPercepcionesAndDescuentos")]
+    partial class AddPercepcionesAndDescuentos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -107,14 +110,8 @@ namespace BlazorVentas.Migrations
                     b.Property<bool>("Activo")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Descripcion")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<int>("Codigo")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("FechaAlta")
                         .HasColumnType("datetime2");
@@ -124,12 +121,32 @@ namespace BlazorVentas.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<decimal>("PorcentajeDescuento")
-                        .HasColumnType("decimal(18,2)");
-
                     b.HasKey("Id");
 
                     b.ToTable("AMRO_Descuentos", (string)null);
+                });
+
+            modelBuilder.Entity("BlazorVentas.Data.Models.ABM.DescuentoCliente", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DescuentoABMId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdCliente")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DescuentoABMId");
+
+                    b.HasIndex("IdCliente");
+
+                    b.ToTable("AMRO_Descuentos_Clientes", (string)null);
                 });
 
             modelBuilder.Entity("BlazorVentas.Data.Models.ABM.Localidad", b =>
@@ -224,22 +241,27 @@ namespace BlazorVentas.Migrations
                     b.Property<bool>("Activo")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<int?>("CodPercepcion")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Codigo")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("FechaAlta")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("IvaPercepcion")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<decimal>("Iva")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("NombrePercepcion")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<decimal>("PercepMinima")
                         .HasPrecision(18, 2)
@@ -697,9 +719,6 @@ namespace BlazorVentas.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int?>("DescuentoABMId")
-                        .HasColumnType("int");
-
                     b.Property<string>("DomicilioEntrega")
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
@@ -773,8 +792,6 @@ namespace BlazorVentas.Migrations
                     b.HasIndex("CodigoDescuentoId");
 
                     b.HasIndex("CompanyId");
-
-                    b.HasIndex("DescuentoABMId");
 
                     b.HasIndex("LocalidadId");
 
@@ -1097,6 +1114,25 @@ namespace BlazorVentas.Migrations
                     b.ToTable("VentaLineas", (string)null);
                 });
 
+            modelBuilder.Entity("BlazorVentas.Data.Models.ABM.DescuentoCliente", b =>
+                {
+                    b.HasOne("BlazorVentas.Data.Models.ABM.DescuentoABM", "DescuentoABM")
+                        .WithMany("DescuentoClientes")
+                        .HasForeignKey("DescuentoABMId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BlazorVentas.Data.Models.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("IdCliente")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("DescuentoABM");
+                });
+
             modelBuilder.Entity("BlazorVentas.Data.Models.ABM.Localidad", b =>
                 {
                     b.HasOne("BlazorVentas.Data.Models.ABM.Provincia", "Provincia")
@@ -1201,11 +1237,6 @@ namespace BlazorVentas.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("BlazorVentas.Data.Models.ABM.DescuentoABM", "DescuentoABM")
-                        .WithMany()
-                        .HasForeignKey("DescuentoABMId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("BlazorVentas.Data.Models.ABM.Localidad", "Localidad")
                         .WithMany()
                         .HasForeignKey("LocalidadId")
@@ -1238,8 +1269,6 @@ namespace BlazorVentas.Migrations
                     b.Navigation("CodigoDescuento");
 
                     b.Navigation("Company");
-
-                    b.Navigation("DescuentoABM");
 
                     b.Navigation("Localidad");
 
@@ -1321,6 +1350,11 @@ namespace BlazorVentas.Migrations
                     b.Navigation("Articulo");
 
                     b.Navigation("Venta");
+                });
+
+            modelBuilder.Entity("BlazorVentas.Data.Models.ABM.DescuentoABM", b =>
+                {
+                    b.Navigation("DescuentoClientes");
                 });
 
             modelBuilder.Entity("BlazorVentas.Data.Models.ABM.Percepcion", b =>

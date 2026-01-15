@@ -308,7 +308,7 @@
                     <option value="">Todas las Zonas</option>
                     @foreach (var zona in _zonas)
                     {
-                        <option value="@zona.Id">@zona.Nombre</option>
+                        <option value="@zona.Id">@zona.Descripcion</option>
                     }
                 </select>
                 
@@ -477,6 +477,27 @@
                     <button type="button" class="btn-close" @onclick="CloseModal"></button>
                 </div>
                 <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    <!-- Sección: Empresa -->
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-briefcase me-2"></span>Empresa</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Empresa <span class="text-danger">*</span></label>
+                            <select class="form-select @(_editCustomer.CompanyId == 0 ? "is-invalid" : "")" 
+                                    value="@(_editCustomer.CompanyId == 0 ? "" : _editCustomer.CompanyId.ToString())" 
+                                    @onchange="OnEmpresaChanged">
+                                <option value="">-- Seleccionar empresa --</option>
+                                @foreach (var empresa in _empresas.Where(e => e.Activo))
+                                {
+                                    <option value="@empresa.Id">@empresa.RazonSocial</option>
+                                }
+                            </select>
+                            @if (_editCustomer.CompanyId == 0)
+                            {
+                                <div class="invalid-feedback">Debe seleccionar una empresa</div>
+                            }
+                        </div>
+                    </div>
+
                     <!-- Sección: Datos Básicos -->
                     <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-person me-2"></span>Datos Básicos</h6>
                     <div class="row g-3 mb-4">
@@ -623,7 +644,7 @@
                                 <option value="">Seleccionar zona</option>
                                 @foreach (var zona in _zonas)
                                 {
-                                    <option value="@zona.Id">@zona.Nombre</option>
+                                    <option value="@zona.Id">@zona.Descripcion</option>
                                 }
                             </select>
                         </div>
@@ -814,6 +835,7 @@
     private List<Customer> _customers = new();
     
     // Listas ABM
+    private List<Company> _empresas = new();
     private List<ProvinciaItem> _provincias = new();
     private List<LocalidadItem> _localidades = new();
     private List<LocalidadItem> _localidadesFiltradas = new();
@@ -892,6 +914,7 @@
         try
         {
             // Cargar listas ABM (globales)
+            _empresas = await Commerce.GetCompaniesAsync();
             _provincias = await Commerce.GetProvinciasAsync();
             _localidades = await Commerce.GetLocalidadesAsync();
             _descuentos = await Commerce.GetDescuentosAsync();
@@ -974,6 +997,7 @@
         {
             Id = customer.Id,
             CompanyId = customer.CompanyId,
+            CompanyNombre = customer.CompanyNombre ?? _empresas.FirstOrDefault(e => e.Id == customer.CompanyId)?.RazonSocial,
             CodigoCliente = customer.CodigoCliente,
             CodigoSucursal = customer.CodigoSucursal,
             CodigoParaMostrar = customer.CodigoParaMostrar,
@@ -1036,6 +1060,20 @@
     }
     
     // Event handlers para los selectores
+    private void OnEmpresaChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
+        {
+            _editCustomer.CompanyId = id;
+            _editCustomer.CompanyNombre = _empresas.FirstOrDefault(emp => emp.Id == id)?.RazonSocial;
+        }
+        else
+        {
+            _editCustomer.CompanyId = 0;
+            _editCustomer.CompanyNombre = null;
+        }
+    }
+
     private void OnProvinciaChanged(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
@@ -1105,7 +1143,7 @@
         if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
         {
             _editCustomer.ZonaId = id;
-            _editCustomer.ZonaNombre = _zonas.FirstOrDefault(z => z.Id == id)?.Nombre;
+            _editCustomer.ZonaNombre = _zonas.FirstOrDefault(z => z.Id == id)?.Descripcion;
         }
         else
         {
@@ -1158,6 +1196,12 @@
     
     private async Task SaveCustomer()
     {
+        if (_editCustomer.CompanyId <= 0)
+        {
+            _modalError = "Debe seleccionar una empresa";
+            return;
+        }
+
         if (_editCustomer.CodigoCliente <= 0)
         {
             _modalError = "El código de cliente es requerido";
@@ -1179,17 +1223,15 @@
         
         try
         {
-            var companyId = TenantState.CurrentCompanyId;
-            if (!companyId.HasValue)
+            var companyId = _editCustomer.CompanyId;
+            if (companyId <= 0)
             {
                 _modalError = "No hay empresa seleccionada";
                 return;
             }
-            
-            _editCustomer.CompanyId = companyId.Value;
             var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
             var usuarioId = token != null ? await SessionService.GetUsuarioIdAsync(token) : null;
-            await Commerce.SaveCustomerAsync(companyId.Value, _editCustomer, usuarioId);
+            await Commerce.SaveCustomerAsync(companyId, _editCustomer, usuarioId);
             
             await LoadDataAsync();
             CloseModal();

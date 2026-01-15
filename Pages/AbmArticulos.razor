@@ -517,7 +517,7 @@
                     <!-- Sección: Datos Básicos -->
                     <h6 class="text-primary border-bottom pb-2 mb-3"><span class="oi oi-tag me-2"></span>Datos Básicos</h6>
                     <div class="row g-3 mb-4">
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <label class="form-label">Código Artículo *</label>
                             <input type="number" class="form-control" @bind="_editProduct.CodigoArticulo" />
                         </div>
@@ -525,7 +525,7 @@
                             <label class="form-label">Código para Mostrar</label>
                             <input type="number" class="form-control" @bind="_editProduct.CodigoParaMostrar" />
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <label class="form-label">Descripción *</label>
                             <input type="text" class="form-control" @bind="_editProduct.Name" placeholder="Descripción del artículo" />
                         </div>
@@ -741,17 +741,6 @@
                                 <input class="form-check-input" type="checkbox" id="inhabilitado" @bind="_editProduct.Inhabilitado" />
                                 <label class="form-check-label" for="inhabilitado">Inhabilitado</label>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-check form-switch mt-4">
-                                <input class="form-check-input" type="checkbox" id="tieneMensaje" @bind="_editProduct.TieneMensaje" />
-                                <label class="form-check-label" for="tieneMensaje">Tiene Mensaje</label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Mensaje sobre Artículo</label>
-                            <input type="text" class="form-control" @bind="_editProduct.MensajeSobreArticulo" 
-                                   placeholder="Mensaje o nota sobre el artículo" disabled="@(!_editProduct.TieneMensaje)" />
                         </div>
                     </div>
                     
@@ -1115,8 +1104,6 @@
             BultosXCamada = product.BultosXCamada,
             BultosXPalet = product.BultosXPalet,
             Inhabilitado = product.Inhabilitado,
-            MensajeSobreArticulo = product.MensajeSobreArticulo,
-            TieneMensaje = product.TieneMensaje,
             ImagePath = product.ImagePath
         };
         _modalError = null;

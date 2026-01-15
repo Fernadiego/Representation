@@ -530,6 +530,14 @@
                 </div>
             }
 
+            @if (_showClienteWarningAlert && !string.IsNullOrEmpty(_clienteMensaje))
+            {
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <strong><span class="oi oi-warning me-2"></span>Mensaje sobre el cliente:</strong> @_clienteMensaje
+                    <button type="button" class="btn-close" @onclick="() => _showClienteWarningAlert = false" aria-label="Close"></button>
+                </div>
+            }
+
             <EditForm Model="_saleDraft" OnValidSubmit="SaveSale">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
@@ -546,25 +554,26 @@
                         <div class="material-autocomplete-wrapper @(!string.IsNullOrEmpty(_saleDraft.TipoComprobante) ? "has-value" : "")">
                             <input type="text" 
                                    class="material-autocomplete material-autocomplete-input form-select-sm" 
-                                   value="@GetComprobanteDisplayText()"
+                                   value="@_comprobanteSearchText"
+                                   @oninput="@((ChangeEventArgs e) => { _comprobanteSearchText = e.Value?.ToString() ?? string.Empty; OnComprobanteSearchTextChanged(); })"
+                                   @onkeydown="OnComprobanteKeyDown"
                                    @onfocus="OnComprobanteFocus"
                                    @onblur="OnComprobanteBlur"
-                                   readonly
                                    autocomplete="off" />
                             <label class="form-label small">Comprobante</label>
-                            @if (_showComprobanteDropdown)
+                            @if (_showComprobanteDropdown && _filteredComprobantes.Any())
                             {
                                 <div class="material-autocomplete-dropdown">
-                                    @foreach (var comprobante in _comprobantes)
+                                    @foreach (var comprobante in _filteredComprobantes.Take(10))
                                     {
-                                        var index = _comprobantes.IndexOf(comprobante);
+                                        var index = _filteredComprobantes.IndexOf(comprobante);
                                         <div class="material-autocomplete-option comprobante-option @(comprobante.Value == _saleDraft.TipoComprobante ? "selected" : "") @(index == _hoveredComprobanteIndex ? "hovered" : "")" 
                                              @onclick="() => SelectComprobante(comprobante.Value)"
                                              @onmouseenter="() => _hoveredComprobanteIndex = index">
                                             <span class="comprobante-icon" style="background-color: @GetComprobanteColor(comprobante.Value);"></span>
                                             <div class="comprobante-content">
                                                 <div class="comprobante-initials">@comprobante.Initials</div>
-                                                <div class="comprobante-description">@comprobante.Description</div>
+                                                <div class="comprobante-description">@comprobante.Value - @comprobante.Description</div>
                                             </div>
                                         </div>
                                     }
@@ -963,11 +972,11 @@
                 @* Cabecera de la Factura *@
                 <div class="invoice-header">
                     <div class="invoice-company">
-                        <h1>@(TenantState.CurrentCompany?.Name ?? "MI EMPRESA S.A.")</h1>
-                        <p><strong>Razón Social:</strong> @(TenantState.CurrentCompany?.Name ?? "Mi Empresa S.A.")</p>
-                        <p><strong>Dirección:</strong> Av. Principal 1234, Ciudad</p>
-                        <p><strong>Tel:</strong> (011) 4567-8900</p>
-                        <p><strong>CUIT:</strong> 30-12345678-9</p>
+                        <h1>@(TenantState.CurrentCompany?.RazonSocial ?? "MI EMPRESA S.A.")</h1>
+                        <p><strong>Razón Social:</strong> @(TenantState.CurrentCompany?.RazonSocial ?? "Mi Empresa S.A.")</p>
+                        <p><strong>Dirección:</strong> @(TenantState.CurrentCompany?.Direccion ?? "Av. Principal 1234, Ciudad")</p>
+                        <p><strong>Tel:</strong> @(TenantState.CurrentCompany?.Telefono ?? "(011) 4567-8900")</p>
+                        <p><strong>CUIT:</strong> @(TenantState.CurrentCompany?.CUIT ?? "30-12345678-9")</p>
                         <p><strong>Ing. Brutos:</strong> 30-12345678-9</p>
                         <p><strong>Inicio Actividad:</strong> 01/01/2020</p>
                     </div>
@@ -1377,6 +1386,10 @@
     private int _hoveredClienteIndex = -1;
     private List<Customer> _filteredClientes = new();
     
+    // Variables para mensaje de alerta del cliente
+    private bool _showClienteWarningAlert = false;
+    private string? _clienteMensaje = null;
+    
     // Variables para autocomplete de vendedor
     private string _vendedorSearchText = string.Empty;
     private bool _showVendedorDropdown = false;
@@ -1405,20 +1418,41 @@
             _saleDraft.SucursalId = null;
     }
     
-    // Variables para dropdown de comprobante
+    // Variables para autocomplete de comprobante
+    private string _comprobanteSearchText = string.Empty;
     private bool _showComprobanteDropdown = false;
     private int _hoveredComprobanteIndex = -1;
-    private List<ComprobanteInfo> _comprobantes = new()
-    {
-        new ComprobanteInfo { Value = "NPV", Initials = "NPV", Description = "Nota de Venta (NPV)" },
-        new ComprobanteInfo { Value = "Factura", Initials = "FAC", Description = "Factura" }
-    };
+    private List<ComprobanteInfo> _comprobantes = new();
+    private List<ComprobanteInfo> _filteredComprobantes = new();
+    private List<TipoComprobanteItem> _tiposComprobante = new();
     
     private class ComprobanteInfo
     {
         public string Value { get; set; } = string.Empty;
         public string Initials { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+    }
+    
+    private void LoadComprobantesFromDb()
+    {
+        _comprobantes = _tiposComprobante.Select(t => new ComprobanteInfo
+        {
+            Value = t.Codigo,
+            Initials = !string.IsNullOrEmpty(t.Letra) ? t.Letra : (t.Codigo.Length >= 3 ? t.Codigo.Substring(0, 3).ToUpper() : t.Codigo.ToUpper()),
+            Description = t.Descripcion
+        }).ToList();
+        
+        _filteredComprobantes = _comprobantes.ToList();
+        
+        // Si hay un comprobante seleccionado, actualizar el texto de búsqueda
+        if (!string.IsNullOrEmpty(_saleDraft.TipoComprobante))
+        {
+            var selectedComprobante = _comprobantes.FirstOrDefault(c => c.Value == _saleDraft.TipoComprobante);
+            if (selectedComprobante != null)
+            {
+                _comprobanteSearchText = $"{selectedComprobante.Value} - {selectedComprobante.Description}";
+            }
+        }
     }
 
     // Lista de líneas nuevas para la grilla (artículos en edición)
@@ -1488,6 +1522,10 @@
         _customers = await Commerce.GetCustomersAsync(id);
         _vendors = await Commerce.GetVendorsAsync(id);
         _products = await Commerce.GetProductsAsync(id);
+        
+        // Cargar tipos de comprobante desde la base de datos
+        _tiposComprobante = await Commerce.GetTiposComprobanteAsync();
+        LoadComprobantesFromDb();
 
         if (resetSale)
         {
@@ -1508,7 +1546,7 @@
             CompanyId = TenantState.CurrentCompanyId ?? 0,
             Date = DateTime.Today,
             CustomerId = 0, // Sin cliente seleccionado por defecto
-            VendorId = _vendors.FirstOrDefault()?.Id ?? 0,
+            VendorId = 0, // Sin vendedor seleccionado por defecto
             TipoComprobante = string.Empty,
             NumeroComprobante = string.Empty,
             SucursalId = null,
@@ -1525,6 +1563,10 @@
 
         _error = null;
         _comprobanteError = null;
+        
+        // Limpiar mensaje de alerta del cliente
+        _clienteMensaje = null;
+        _showClienteWarningAlert = false;
         
         // Inicializar texto de búsqueda de cliente y vendedor
         _clienteSearchText = string.Empty;
@@ -1669,6 +1711,22 @@
         _clienteSearchText = $"{customer.Id} - {customer.Name}";
         _showClienteDropdown = false;
         _hoveredClienteIndex = -1;
+        
+        // Completar sucursal con el código de sucursal del cliente seleccionado
+        _saleDraft.SucursalId = customer.CodigoSucursal;
+        
+        // Mostrar mensaje de alerta si el cliente tiene un mensaje
+        if (!string.IsNullOrEmpty(customer.MensajeSobreCliente))
+        {
+            _clienteMensaje = customer.MensajeSobreCliente;
+            _showClienteWarningAlert = true;
+        }
+        else
+        {
+            _clienteMensaje = null;
+            _showClienteWarningAlert = false;
+        }
+        
         StateHasChanged();
     }
     
@@ -1877,18 +1935,112 @@
     {
         _showComprobanteDropdown = true;
         _hoveredComprobanteIndex = -1;
+        FilterComprobantes();
     }
     
     private async Task OnComprobanteBlur()
     {
         await Task.Delay(200);
         _showComprobanteDropdown = false;
+        
+        // Validar que el texto ingresado coincida con un comprobante válido
+        if (!string.IsNullOrWhiteSpace(_comprobanteSearchText))
+        {
+            var exactMatch = _comprobantes.FirstOrDefault(c => 
+                c.Value.Equals(_comprobanteSearchText, StringComparison.OrdinalIgnoreCase) ||
+                c.Description.Equals(_comprobanteSearchText, StringComparison.OrdinalIgnoreCase) ||
+                $"{c.Value} - {c.Description}".Equals(_comprobanteSearchText, StringComparison.OrdinalIgnoreCase));
+            
+            if (exactMatch != null)
+            {
+                _saleDraft.TipoComprobante = exactMatch.Value;
+                _comprobanteSearchText = $"{exactMatch.Value} - {exactMatch.Description}";
+            }
+            else
+            {
+                // Buscar match parcial
+                var partialMatch = _comprobantes.FirstOrDefault(c =>
+                    c.Value.StartsWith(_comprobanteSearchText, StringComparison.OrdinalIgnoreCase) ||
+                    c.Description.StartsWith(_comprobanteSearchText, StringComparison.OrdinalIgnoreCase));
+                    
+                if (partialMatch != null)
+                {
+                    _saleDraft.TipoComprobante = partialMatch.Value;
+                    _comprobanteSearchText = $"{partialMatch.Value} - {partialMatch.Description}";
+                }
+                else
+                {
+                    // Limpiar si no coincide con nada
+                    _comprobanteSearchText = string.Empty;
+                    _saleDraft.TipoComprobante = string.Empty;
+                }
+            }
+        }
+        else
+        {
+            _saleDraft.TipoComprobante = string.Empty;
+        }
+        
         StateHasChanged();
+    }
+    
+    private void OnComprobanteSearchTextChanged()
+    {
+        FilterComprobantes();
+        _showComprobanteDropdown = true;
+    }
+    
+    private void FilterComprobantes()
+    {
+        if (string.IsNullOrWhiteSpace(_comprobanteSearchText))
+        {
+            _filteredComprobantes = _comprobantes.ToList();
+        }
+        else
+        {
+            var searchLower = _comprobanteSearchText.ToLower().Trim();
+            _filteredComprobantes = _comprobantes
+                .Where(c => c.Value.ToLower().Contains(searchLower) || 
+                           c.Description.ToLower().Contains(searchLower))
+                .ToList();
+        }
+        _hoveredComprobanteIndex = -1;
+    }
+    
+    private void OnComprobanteKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && _filteredComprobantes.Any())
+        {
+            var comprobanteToSelect = _hoveredComprobanteIndex >= 0 && _hoveredComprobanteIndex < _filteredComprobantes.Count
+                ? _filteredComprobantes[_hoveredComprobanteIndex]
+                : _filteredComprobantes.First();
+            SelectComprobante(comprobanteToSelect.Value);
+        }
+        else if (e.Key == "ArrowDown")
+        {
+            if (_hoveredComprobanteIndex < _filteredComprobantes.Count - 1)
+            {
+                _hoveredComprobanteIndex++;
+            }
+        }
+        else if (e.Key == "ArrowUp")
+        {
+            if (_hoveredComprobanteIndex > 0)
+            {
+                _hoveredComprobanteIndex--;
+            }
+        }
+        else if (e.Key == "Escape")
+        {
+            _showComprobanteDropdown = false;
+        }
     }
     
     private void SelectComprobante(string value)
     {
+        var comprobante = _comprobantes.FirstOrDefault(c => c.Value == value);
         _saleDraft.TipoComprobante = value;
+        _comprobanteSearchText = comprobante != null ? $"{comprobante.Value} - {comprobante.Description}" : value;
         _showComprobanteDropdown = false;
         _hoveredComprobanteIndex = -1;
         OnTipoComprobanteChanged(new ChangeEventArgs { Value = value });

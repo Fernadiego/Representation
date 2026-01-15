@@ -4,8 +4,10 @@ namespace BlazorVentas.Data.Models;
 public class Vendedor
 {
     public int Id { get; set; }
+    public string Codigo { get; set; } = string.Empty;
     public string Nombre { get; set; } = string.Empty;
-    public decimal Comision { get; set; }
+    public decimal ComisionPorcentaje { get; set; }
+    public bool Activo { get; set; } = true;
+    public DateTime FechaAlta { get; set; } = DateTime.Now;
     public List<Venta> Ventas { get; set; } = new();
 }
-

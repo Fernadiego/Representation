@@ -288,7 +288,74 @@ public class CommerceService
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
         var zonas = await db.Zonas.ToListAsync();
-        return zonas.Select(z => new ZonaItem { Id = z.Id, Nombre = z.Nombre }).ToList();
+        return zonas.Select(z => new ZonaItem 
+        { 
+            Id = z.Id, 
+            Codigo = z.Codigo,
+            Descripcion = z.Descripcion,
+            Activo = z.Activo,
+            FechaAlta = z.FechaAlta
+        }).ToList();
+    }
+
+    public async Task SaveZonaAsync(ZonaItem zona, int? usuarioId = null)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+        
+        string accion;
+        string detalle;
+        
+        if (zona.Id == 0)
+        {
+            var nuevaZona = new Zona
+            {
+                Codigo = zona.Codigo,
+                Descripcion = zona.Descripcion,
+                Activo = zona.Activo,
+                FechaAlta = DateTime.Now
+            };
+            db.Zonas.Add(nuevaZona);
+            await db.SaveChangesAsync();
+            zona.Id = nuevaZona.Id;
+            
+            accion = "Alta de zona";
+            detalle = $"Código: {zona.Codigo}, Descripción: {zona.Descripcion}";
+        }
+        else
+        {
+            var existing = await db.Zonas.FindAsync(zona.Id);
+            if (existing != null)
+            {
+                existing.Codigo = zona.Codigo;
+                existing.Descripcion = zona.Descripcion;
+                existing.Activo = zona.Activo;
+                
+                await db.SaveChangesAsync();
+            }
+            
+            accion = "Modificación de zona";
+            detalle = $"Código: {zona.Codigo}, Descripción: {zona.Descripcion}, Activo: {zona.Activo}";
+        }
+        
+        await RegistrarBitacoraAsync(usuarioId, "ABM Zonas", accion, detalle);
+    }
+
+    public async Task DeleteZonaAsync(int zonaId, int? usuarioId = null)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+        
+        var zona = await db.Zonas.FindAsync(zonaId);
+        if (zona != null)
+        {
+            var detalle = $"Código: {zona.Codigo}, Descripción: {zona.Descripcion}";
+            
+            db.Zonas.Remove(zona);
+            await db.SaveChangesAsync();
+            
+            await RegistrarBitacoraAsync(usuarioId, "ABM Zonas", "Eliminación de zona", detalle);
+        }
     }
 
     public async Task<List<VendedorItem>> GetVendedoresAbmAsync()
@@ -296,7 +363,77 @@ public class CommerceService
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
         var vendedores = await db.Vendedores.ToListAsync();
-        return vendedores.Select(v => new VendedorItem { Id = v.Id, Nombre = v.Nombre }).ToList();
+        return vendedores.Select(v => new VendedorItem 
+        { 
+            Id = v.Id, 
+            Codigo = v.Codigo,
+            Nombre = v.Nombre,
+            ComisionPorcentaje = v.ComisionPorcentaje,
+            Activo = v.Activo,
+            FechaAlta = v.FechaAlta
+        }).ToList();
+    }
+
+    public async Task SaveVendedorAsync(VendedorItem vendedor, int? usuarioId = null)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+        
+        string accion;
+        string detalle;
+        
+        if (vendedor.Id == 0)
+        {
+            var nuevoVendedor = new Vendedor
+            {
+                Codigo = vendedor.Codigo,
+                Nombre = vendedor.Nombre,
+                ComisionPorcentaje = vendedor.ComisionPorcentaje,
+                Activo = vendedor.Activo,
+                FechaAlta = DateTime.Now
+            };
+            db.Vendedores.Add(nuevoVendedor);
+            await db.SaveChangesAsync();
+            vendedor.Id = nuevoVendedor.Id;
+            
+            accion = "Alta de vendedor";
+            detalle = $"Código: {vendedor.Codigo}, Nombre: {vendedor.Nombre}, Comisión: {vendedor.ComisionPorcentaje}%";
+        }
+        else
+        {
+            var existing = await db.Vendedores.FindAsync(vendedor.Id);
+            if (existing != null)
+            {
+                existing.Codigo = vendedor.Codigo;
+                existing.Nombre = vendedor.Nombre;
+                existing.ComisionPorcentaje = vendedor.ComisionPorcentaje;
+                existing.Activo = vendedor.Activo;
+                
+                await db.SaveChangesAsync();
+            }
+            
+            accion = "Modificación de vendedor";
+            detalle = $"Código: {vendedor.Codigo}, Nombre: {vendedor.Nombre}, Comisión: {vendedor.ComisionPorcentaje}%, Activo: {vendedor.Activo}";
+        }
+        
+        await RegistrarBitacoraAsync(usuarioId, "ABM Vendedores", accion, detalle);
+    }
+
+    public async Task DeleteVendedorAsync(int vendedorId, int? usuarioId = null)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+        
+        var vendedor = await db.Vendedores.FindAsync(vendedorId);
+        if (vendedor != null)
+        {
+            var detalle = $"Código: {vendedor.Codigo}, Nombre: {vendedor.Nombre}";
+            
+            db.Vendedores.Remove(vendedor);
+            await db.SaveChangesAsync();
+            
+            await RegistrarBitacoraAsync(usuarioId, "ABM Vendedores", "Eliminación de vendedor", detalle);
+        }
     }
 
     public async Task<List<CobradorItem>> GetCobradoresAsync()
@@ -304,7 +441,74 @@ public class CommerceService
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
         var cobradores = await db.Cobradores.ToListAsync();
-        return cobradores.Select(c => new CobradorItem { Id = c.Id, Nombre = c.Nombre }).ToList();
+        return cobradores.Select(c => new CobradorItem 
+        { 
+            Id = c.Id, 
+            Codigo = c.Codigo,
+            Nombre = c.Nombre,
+            Activo = c.Activo,
+            FechaAlta = c.FechaAlta
+        }).ToList();
+    }
+
+    public async Task SaveCobradorAsync(CobradorItem cobrador, int? usuarioId = null)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+        
+        string accion;
+        string detalle;
+        
+        if (cobrador.Id == 0)
+        {
+            var nuevoCobrador = new Cobrador
+            {
+                Codigo = cobrador.Codigo,
+                Nombre = cobrador.Nombre,
+                Activo = cobrador.Activo,
+                FechaAlta = DateTime.Now
+            };
+            db.Cobradores.Add(nuevoCobrador);
+            await db.SaveChangesAsync();
+            cobrador.Id = nuevoCobrador.Id;
+            
+            accion = "Alta de cobrador";
+            detalle = $"Código: {cobrador.Codigo}, Nombre: {cobrador.Nombre}";
+        }
+        else
+        {
+            var existing = await db.Cobradores.FindAsync(cobrador.Id);
+            if (existing != null)
+            {
+                existing.Codigo = cobrador.Codigo;
+                existing.Nombre = cobrador.Nombre;
+                existing.Activo = cobrador.Activo;
+                
+                await db.SaveChangesAsync();
+            }
+            
+            accion = "Modificación de cobrador";
+            detalle = $"Código: {cobrador.Codigo}, Nombre: {cobrador.Nombre}, Activo: {cobrador.Activo}";
+        }
+        
+        await RegistrarBitacoraAsync(usuarioId, "ABM Cobradores", accion, detalle);
+    }
+
+    public async Task DeleteCobradorAsync(int cobradorId, int? usuarioId = null)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+        
+        var cobrador = await db.Cobradores.FindAsync(cobradorId);
+        if (cobrador != null)
+        {
+            var detalle = $"Código: {cobrador.Codigo}, Nombre: {cobrador.Nombre}";
+            
+            db.Cobradores.Remove(cobrador);
+            await db.SaveChangesAsync();
+            
+            await RegistrarBitacoraAsync(usuarioId, "ABM Cobradores", "Eliminación de cobrador", detalle);
+        }
     }
 
     public async Task<List<ClaseClienteItem>> GetClasesClienteAsync()
@@ -315,7 +519,7 @@ public class CommerceService
         return clases.Select(c => new ClaseClienteItem { Id = c.Id, Nombre = c.Nombre }).ToList();
     }
 
-    // ABMs para Comprobantes
+    // ABMs para Comprobantes (AMRO_Comprobantes)
     public async Task<List<ComprobanteItem>> GetComprobantesAsync()
     {
         using var scope = _serviceProvider.CreateScope();
@@ -325,9 +529,15 @@ public class CommerceService
         { 
             Id = c.Id, 
             Codigo = c.Codigo, 
-            Descripcion = c.Descripcion, 
-            Tipo = c.Tipo, 
-            Numeracion = c.Numeracion 
+            Descripcion = c.Descripcion,
+            Letra = c.Letra,
+            CodigoAfip = c.CodigoAfip,
+            RequiereCuit = c.RequiereCuit,
+            RequiereStock = c.RequiereStock,
+            Afectacc = c.Afectacc,
+            Activo = c.Activo,
+            FechaAlta = c.FechaAlta,
+            FechaModificacion = c.FechaModificacion
         }).ToList();
     }
 
@@ -343,9 +553,14 @@ public class CommerceService
             var entity = new Comprobante 
             { 
                 Codigo = comprobante.Codigo, 
-                Descripcion = comprobante.Descripcion, 
-                Tipo = comprobante.Tipo, 
-                Numeracion = comprobante.Numeracion 
+                Descripcion = comprobante.Descripcion,
+                Letra = comprobante.Letra,
+                CodigoAfip = comprobante.CodigoAfip,
+                RequiereCuit = comprobante.RequiereCuit,
+                RequiereStock = comprobante.RequiereStock,
+                Afectacc = comprobante.Afectacc,
+                Activo = comprobante.Activo,
+                FechaAlta = DateTime.Now
             };
             db.Comprobantes.Add(entity);
             await db.SaveChangesAsync();
@@ -358,8 +573,13 @@ public class CommerceService
             {
                 existing.Codigo = comprobante.Codigo;
                 existing.Descripcion = comprobante.Descripcion;
-                existing.Tipo = comprobante.Tipo;
-                existing.Numeracion = comprobante.Numeracion;
+                existing.Letra = comprobante.Letra;
+                existing.CodigoAfip = comprobante.CodigoAfip;
+                existing.RequiereCuit = comprobante.RequiereCuit;
+                existing.RequiereStock = comprobante.RequiereStock;
+                existing.Afectacc = comprobante.Afectacc;
+                existing.Activo = comprobante.Activo;
+                existing.FechaModificacion = DateTime.Now;
                 await db.SaveChangesAsync();
             }
         }
@@ -554,8 +774,21 @@ public class CommerceService
 
     public async Task<List<Vendor>> GetVendorsAsync(int companyId)
     {
-        // Los vendedores de ventas aún están en memoria - se pueden migrar a BD si se necesita
-        return await Task.FromResult(new List<Vendor>());
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+        
+        var vendedores = await db.Vendedores
+            .Where(v => v.Activo)
+            .OrderBy(v => v.Nombre)
+            .ToListAsync();
+        
+        return vendedores.Select(v => new Vendor
+        {
+            Id = v.Id,
+            CompanyId = companyId,
+            Name = $"{v.Codigo} - {v.Nombre}",
+            CommissionRate = v.ComisionPorcentaje
+        }).ToList();
     }
 
     public async Task SaveVendorAsync(int companyId, Vendor vendor)
@@ -589,6 +822,7 @@ public class CommerceService
             .Include(c => c.CodigoDescuento)
             .Include(c => c.TipoCliente)
             .Include(c => c.ClaseCliente)
+            .Include(c => c.DescuentoABM)
             .Where(c => c.CompanyId == companyId)
             .ToListAsync();
         
@@ -606,7 +840,6 @@ public class CommerceService
             DomicilioEntrega = c.DomicilioEntrega,
             DomicilioLegal = c.DomicilioLegal,
             LocalidadId = c.LocalidadId,
-            LocalidadNombre = c.Localidad?.Nombre,
             ProvinciaId = c.ProvinciaId,
             ProvinciaNombre = c.Provincia?.Nombre,
             CP = c.CP,
@@ -618,11 +851,14 @@ public class CommerceService
             ListaPrecio = c.ListaPrecio,
             CodigoDescuentoId = c.CodigoDescuentoId,
             CodigoDescuentoNombre = c.CodigoDescuento?.Descripcion,
+            DescuentoABMId = c.DescuentoABMId,
+            DescuentoABMNombre = c.DescuentoABM?.Nombre,
+            DescuentoABMPorcentaje = c.DescuentoABM?.PorcentajeDescuento ?? 0,
             TipoClienteId = c.TipoClienteId,
             TipoClienteNombre = c.TipoCliente?.Descripcion,
             CondicionPago = c.CondicionPago,
             ZonaId = c.ZonaId,
-            ZonaNombre = c.Zona?.Nombre,
+            ZonaNombre = c.Zona?.Descripcion,
             VendedorId = c.VendedorId,
             VendedorNombre = c.Vendedor?.Nombre,
             CobradorId = c.CobradorId,
@@ -669,6 +905,7 @@ public class CommerceService
                 CUIT = customer.Cuit,
                 ListaPrecio = customer.ListaPrecio,
                 CodigoDescuentoId = customer.CodigoDescuentoId,
+                DescuentoABMId = customer.DescuentoABMId,
                 TipoClienteId = customer.TipoClienteId,
                 CondicionPago = customer.CondicionPago,
                 ZonaId = customer.ZonaId,
@@ -708,6 +945,7 @@ public class CommerceService
             existing.CUIT = customer.Cuit;
             existing.ListaPrecio = customer.ListaPrecio;
             existing.CodigoDescuentoId = customer.CodigoDescuentoId;
+            existing.DescuentoABMId = customer.DescuentoABMId;
             existing.TipoClienteId = customer.TipoClienteId;
             existing.CondicionPago = customer.CondicionPago;
             existing.ZonaId = customer.ZonaId;
@@ -761,7 +999,6 @@ public class CommerceService
             .Include(a => a.Marca)
             .Include(a => a.Origen)
             .Include(a => a.TipoEnvase)
-            .Include(a => a.Cliente)
             .Where(a => a.CompanyId == companyId)
             .ToListAsync();
         
@@ -772,7 +1009,6 @@ public class CommerceService
             CodigoArticulo = a.CodigoArticulo,
             CodigoParaMostrar = a.CodigoParaMostrar,
             Name = a.Descripcion,
-            Description = a.MensajeSobreArticulo,
             MarcaId = a.MarcaId,
             MarcaNombre = a.Marca?.Nombre,
             OrigenId = a.OrigenId,
@@ -802,11 +1038,7 @@ public class CommerceService
             PesoPalet = a.PesoPalet,
             BultosXCamada = a.BultosXCamada,
             BultosXPalet = a.BultosXPalet,
-            Inhabilitado = a.Inhabilitado,
-            MensajeSobreArticulo = a.MensajeSobreArticulo,
-            TieneMensaje = !string.IsNullOrEmpty(a.MensajeSobreArticulo),
-            ClienteId = a.ClienteId,
-            ClienteNombre = a.Cliente?.NombreCliente
+            Inhabilitado = a.Inhabilitado
         }).ToList();
     }
 
@@ -852,9 +1084,7 @@ public class CommerceService
                 PesoPalet = product.PesoPalet,
                 BultosXCamada = product.BultosXCamada,
                 BultosXPalet = product.BultosXPalet,
-                Inhabilitado = product.Inhabilitado,
-                MensajeSobreArticulo = product.MensajeSobreArticulo,
-                ClienteId = product.ClienteId
+                Inhabilitado = product.Inhabilitado
             };
             
             db.Articulos.Add(entity);
@@ -895,8 +1125,6 @@ public class CommerceService
             existing.BultosXCamada = product.BultosXCamada;
             existing.BultosXPalet = product.BultosXPalet;
             existing.Inhabilitado = product.Inhabilitado;
-            existing.MensajeSobreArticulo = product.MensajeSobreArticulo;
-            existing.ClienteId = product.ClienteId;
             
             await db.SaveChangesAsync();
         }
@@ -964,6 +1192,22 @@ public class CommerceService
                 UnitPrice = l.PrecioUnitario
             }).ToList()
         }).ToList();
+    }
+
+    /// <summary>
+    /// Obtiene las ventas de la tabla AMRO_Ventas (nueva estructura)
+    /// </summary>
+    public async Task<List<VentaAMRO>> GetVentasAMROAsync(int companyId)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+        
+        return await db.VentasAMRO
+            .Include(v => v.Detalles)
+            .Include(v => v.Percepciones)
+            .Where(v => v.CompanyId == companyId)
+            .OrderByDescending(v => v.Fecha)
+            .ToListAsync();
     }
 
     public async Task<Sale> CreateSaleAsync(int companyId, Sale sale)

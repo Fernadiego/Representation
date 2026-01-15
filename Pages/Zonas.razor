@@ -1,11 +1,11 @@
-@page "/vendedores"
+@page "/zonas"
 @using Microsoft.AspNetCore.Components.Web
 @using BlazorVentas.Data
 @inject CommerceService Commerce
 @inject IJSRuntime JSRuntime
 @inject BlazorVentas.Services.SessionService SessionService
 
-<PageTitle>ABM Vendedores</PageTitle>
+<PageTitle>ABM Zonas</PageTitle>
 
 <style>
     .card-header h5 {
@@ -26,47 +26,47 @@
         min-width: 140px;
     }
     .filter-select:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
     }
     
-    .vendedores-table {
+    .zonas-table {
         margin: 0;
     }
-    .vendedores-table th {
+    .zonas-table th {
         font-size: 0.8125rem;
     }
-    .vendedores-table tbody tr {
+    .zonas-table tbody tr {
         height: 40px !important;
     }
-    .vendedores-table tbody tr:nth-child(even) {
+    .zonas-table tbody tr:nth-child(even) {
         background-color: #f8f9fa !important;
     }
-    .vendedores-table tbody tr:nth-child(odd) {
+    .zonas-table tbody tr:nth-child(odd) {
         background-color: #ffffff !important;
     }
-    .vendedores-table tbody tr:hover {
+    .zonas-table tbody tr:hover {
         background-color: #e9ecef !important;
     }
-    .vendedores-table tbody tr.table-active {
+    .zonas-table tbody tr.table-active {
         background-color: #cfe2ff !important;
     }
-    .vendedores-table tbody td {
+    .zonas-table tbody td {
         padding: 0.3rem 0.5rem !important;
         vertical-align: middle !important;
     }
     
-    /* Vendedor Cell */
-    .vendedor-cell {
+    /* Zona Cell */
+    .zona-cell {
         display: flex;
         align-items: center;
         gap: 0.75rem;
     }
-    .vendedor-avatar {
+    .zona-avatar {
         width: 36px;
         height: 36px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -74,32 +74,22 @@
         font-weight: 600;
         font-size: 0.875rem;
     }
-    .vendedor-info {
+    .zona-info {
         display: flex;
         flex-direction: column;
     }
-    .vendedor-name {
+    .zona-name {
         font-weight: 600;
         color: #3c4858;
         text-decoration: none;
         margin-bottom: 2px;
     }
-    .vendedor-name:hover {
-        color: #3b82f6;
+    .zona-name:hover {
+        color: #10b981;
     }
-    .vendedor-code {
+    .zona-code {
         font-size: 0.75rem;
         color: #9ca3af;
-    }
-    
-    /* Comision Badge */
-    .comision-badge {
-        font-size: 0.75rem;
-        font-weight: 500;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        background-color: #dbeafe;
-        color: #1d4ed8;
     }
     
     /* Status Badges */
@@ -151,8 +141,8 @@
         background-color: #f1f3f5;
     }
     .action-btn.edit:hover {
-        color: #3b82f6;
-        background-color: #dbeafe;
+        color: #10b981;
+        background-color: #d1fae5;
     }
     .action-btn.delete:hover {
         color: #dc3545;
@@ -160,12 +150,12 @@
     }
     
     /* Checkbox */
-    .vendedor-checkbox {
+    .zona-checkbox {
         width: 18px;
         height: 18px;
         border-radius: 4px;
         cursor: pointer;
-        accent-color: #3b82f6;
+        accent-color: #10b981;
     }
     
     /* Pagination */
@@ -200,12 +190,12 @@
     }
     .page-btn:hover:not(.active):not(:disabled) {
         background-color: #f8f9fa;
-        border-color: #3b82f6;
-        color: #3b82f6;
+        border-color: #10b981;
+        color: #10b981;
     }
     .page-btn.active {
-        background: #3b82f6;
-        border-color: #3b82f6;
+        background: #10b981;
+        border-color: #10b981;
         color: white;
     }
     .page-btn:disabled {
@@ -226,8 +216,8 @@
         width: 250px;
     }
     .search-box input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
     }
     .search-box .search-icon {
         position: absolute;
@@ -239,7 +229,7 @@
     
     /* Modal Styles */
     .modal-header {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         color: white;
         border-radius: 8px 8px 0 0;
     }
@@ -260,8 +250,8 @@
         font-size: 0.875rem;
     }
     .form-control:focus, .form-select:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
     }
     
     /* Empty State */
@@ -286,12 +276,12 @@
     }
     
     .btn-primary {
-        background-color: #3b82f6 !important;
-        border-color: #3b82f6 !important;
+        background-color: #10b981 !important;
+        border-color: #10b981 !important;
     }
     .btn-primary:hover {
-        background-color: #2563eb !important;
-        border-color: #2563eb !important;
+        background-color: #059669 !important;
+        border-color: #059669 !important;
     }
 </style>
 
@@ -299,7 +289,7 @@
 <div class="card shadow-sm">
     <div class="card-header py-2">
         <h5 class="mb-0">
-            <span class="oi oi-briefcase me-2"></span>ABM Vendedores
+            <span class="oi oi-map-marker me-2"></span>ABM Zonas
         </h5>
     </div>
     <div class="card-body py-3">
@@ -315,7 +305,7 @@
                 
                 <div class="search-box">
                     <span class="search-icon oi oi-magnifying-glass"></span>
-                    <input type="text" class="form-control" placeholder="Buscar vendedores..." 
+                    <input type="text" class="form-control" placeholder="Buscar zonas..." 
                            @bind="_searchText" @bind:event="oninput" />
                 </div>
             </div>
@@ -323,88 +313,84 @@
     </div>
 </div>
 
-<!-- Vendedores Table -->
+<!-- Zonas Table -->
 <div class="card shadow-sm mt-3" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
     <div class="card-header d-flex justify-content-between align-items-center py-2">
-        <h5 class="mb-0">Listado de Vendedores</h5>
+        <h5 class="mb-0">Listado de Zonas</h5>
         <button class="btn btn-sm btn-primary" @onclick="OpenAddModal">
-            <span class="oi oi-plus"></span> Agregar Vendedor
+            <span class="oi oi-plus"></span> Agregar Zona
         </button>
     </div>
     @if (_loading)
     {
         <div class="d-flex justify-content-center align-items-center py-5">
-            <div class="spinner-border text-primary" role="status">
+            <div class="spinner-border text-success" role="status">
                 <span class="visually-hidden">Cargando...</span>
             </div>
         </div>
     }
-    else if (!FilteredVendedores.Any())
+    else if (!FilteredZonas.Any())
     {
         <div class="empty-state">
             <div class="empty-state-icon">
-                <span class="oi oi-briefcase"></span>
+                <span class="oi oi-map-marker"></span>
             </div>
-            <h3 class="empty-state-title">No hay vendedores</h3>
-            <p class="empty-state-text">Comienza agregando tu primer vendedor.</p>
+            <h3 class="empty-state-title">No hay zonas</h3>
+            <p class="empty-state-text">Comienza agregando tu primera zona.</p>
             <button class="btn btn-sm btn-primary" @onclick="OpenAddModal">
-                <span class="oi oi-plus"></span> Agregar Vendedor
+                <span class="oi oi-plus"></span> Agregar Zona
             </button>
         </div>
     }
     else
     {
         <div class="table-responsive">
-            <table class="table align-middle mb-0 vendedores-table">
+            <table class="table align-middle mb-0 zonas-table">
                 <thead>
                     <tr>
                         <th style="width: 40px;">
-                            <input type="checkbox" class="vendedor-checkbox" 
+                            <input type="checkbox" class="zona-checkbox" 
                                    @bind="_selectAll" @bind:after="ToggleSelectAll" />
                         </th>
-                        <th>Vendedor</th>
+                        <th>Zona</th>
                         <th>Código</th>
-                        <th>Comisión</th>
                         <th>Fecha Alta</th>
                         <th>Estado</th>
                         <th style="width: 100px;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var vendedor in PaginatedVendedores)
+                    @foreach (var zona in PaginatedZonas)
                     {
                         <tr>
                             <td>
-                                <input type="checkbox" class="vendedor-checkbox" 
-                                       checked="@_selectedVendedores.Contains(vendedor.Id)"
-                                       @onchange="() => ToggleVendedorSelection(vendedor.Id)" />
+                                <input type="checkbox" class="zona-checkbox" 
+                                       checked="@_selectedZonas.Contains(zona.Id)"
+                                       @onchange="() => ToggleZonaSelection(zona.Id)" />
                             </td>
                             <td>
-                                <div class="vendedor-cell">
-                                    <div class="vendedor-avatar">
-                                        @GetInitials(vendedor.Nombre)
+                                <div class="zona-cell">
+                                    <div class="zona-avatar">
+                                        @GetInitials(zona.Descripcion)
                                     </div>
-                                    <div class="vendedor-info">
-                                        <a href="#" class="vendedor-name" @onclick:preventDefault @onclick="() => OpenEditModal(vendedor)">@vendedor.Nombre</a>
-                                        <span class="vendedor-code">ID: @vendedor.Id</span>
+                                    <div class="zona-info">
+                                        <a href="#" class="zona-name" @onclick:preventDefault @onclick="() => OpenEditModal(zona)">@zona.Descripcion</a>
+                                        <span class="zona-code">ID: @zona.Id</span>
                                     </div>
                                 </div>
                             </td>
-                            <td>@vendedor.Codigo</td>
+                            <td>@zona.Codigo</td>
+                            <td>@zona.FechaAlta.ToString("dd/MM/yyyy")</td>
                             <td>
-                                <span class="comision-badge">@vendedor.ComisionPorcentaje.ToString("N2")%</span>
-                            </td>
-                            <td>@vendedor.FechaAlta.ToString("dd/MM/yyyy")</td>
-                            <td>
-                                <span class="status-badge @(vendedor.Activo ? "status-active" : "status-inactive")">
-                                    @(vendedor.Activo ? "Activo" : "Inactivo")
+                                <span class="status-badge @(zona.Activo ? "status-active" : "status-inactive")">
+                                    @(zona.Activo ? "Activo" : "Inactivo")
                                 </span>
                             </td>
                             <td>
-                                <button class="action-btn edit" title="Editar" @onclick="() => OpenEditModal(vendedor)">
+                                <button class="action-btn edit" title="Editar" @onclick="() => OpenEditModal(zona)">
                                     <span class="oi oi-pencil"></span>
                                 </button>
-                                <button class="action-btn delete" title="Eliminar" @onclick="() => ConfirmDelete(vendedor)">
+                                <button class="action-btn delete" title="Eliminar" @onclick="() => ConfirmDelete(zona)">
                                     <span class="oi oi-trash"></span>
                                 </button>
                             </td>
@@ -417,7 +403,7 @@
         <!-- Pagination -->
         <div class="pagination-container">
             <div class="pagination-info">
-                Mostrando @((_currentPage - 1) * _pageSize + 1) a @Math.Min(_currentPage * _pageSize, FilteredVendedores.Count()) de @FilteredVendedores.Count() vendedores
+                Mostrando @((_currentPage - 1) * _pageSize + 1) a @Math.Min(_currentPage * _pageSize, FilteredZonas.Count()) de @FilteredZonas.Count() zonas
             </div>
             <div class="pagination-buttons">
                 <button class="page-btn" disabled="@(_currentPage == 1)" @onclick="() => GoToPage(_currentPage - 1)">
@@ -447,7 +433,7 @@
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <span class="oi @(_isEditing ? "oi-pencil" : "oi-plus") me-2"></span>
-                        @(_isEditing ? "Editar Vendedor" : "Nuevo Vendedor")
+                        @(_isEditing ? "Editar Zona" : "Nueva Zona")
                     </h5>
                     <button type="button" class="btn-close" @onclick="CloseModal"></button>
                 </div>
@@ -460,36 +446,32 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Código <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" @bind="_editVendedor.Codigo" placeholder="Ej: VND001" maxlength="20" />
+                            <input type="text" class="form-control" @bind="_editZona.Codigo" placeholder="Ej: ZN001" maxlength="20" />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Estado</label>
                             <div class="form-check form-switch mt-2">
-                                <input class="form-check-input" type="checkbox" @bind="_editVendedor.Activo" style="width: 3em; height: 1.5em;">
-                                <label class="form-check-label ms-2">@(_editVendedor.Activo ? "Activo" : "Inactivo")</label>
+                                <input class="form-check-input" type="checkbox" @bind="_editZona.Activo" style="width: 3em; height: 1.5em;">
+                                <label class="form-check-label ms-2">@(_editZona.Activo ? "Activo" : "Inactivo")</label>
                             </div>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Nombre <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" @bind="_editVendedor.Nombre" placeholder="Nombre del vendedor" maxlength="100" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Comisión (%)</label>
-                            <input type="number" class="form-control" @bind="_editVendedor.ComisionPorcentaje" step="0.01" min="0" max="100" />
+                            <label class="form-label">Descripción <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" @bind="_editZona.Descripcion" placeholder="Nombre de la zona" maxlength="100" />
                         </div>
                         @if (_isEditing)
                         {
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <label class="form-label">Fecha de Alta</label>
-                                <input type="text" class="form-control" value="@_editVendedor.FechaAlta.ToString("dd/MM/yyyy HH:mm")" disabled />
+                                <input type="text" class="form-control" value="@_editZona.FechaAlta.ToString("dd/MM/yyyy HH:mm")" disabled />
                             </div>
                         }
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" @onclick="SaveVendedor">
-                        <span class="oi oi-check me-1"></span>@(_isEditing ? "Guardar Cambios" : "Crear Vendedor")
+                    <button type="button" class="btn btn-primary" @onclick="SaveZona">
+                        <span class="oi oi-check me-1"></span>@(_isEditing ? "Guardar Cambios" : "Crear Zona")
                     </button>
                 </div>
             </div>
@@ -510,12 +492,12 @@
                     <button type="button" class="btn-close btn-close-white" @onclick="() => _showDeleteModal = false"></button>
                 </div>
                 <div class="modal-body">
-                    <p>¿Está seguro que desea eliminar al vendedor <strong>@_deleteVendedor?.Nombre</strong>?</p>
+                    <p>¿Está seguro que desea eliminar la zona <strong>@_deleteZona?.Descripcion</strong>?</p>
                     <p class="text-muted small">Esta acción no se puede deshacer.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="() => _showDeleteModal = false">Cancelar</button>
-                    <button type="button" class="btn btn-danger" @onclick="DeleteVendedor">
+                    <button type="button" class="btn btn-danger" @onclick="DeleteZona">
                         <span class="oi oi-trash me-1"></span>Eliminar
                     </button>
                 </div>
@@ -525,7 +507,7 @@
 }
 
 @code {
-    private List<VendedorItem> _vendedores = new();
+    private List<ZonaItem> _zonas = new();
     private bool _loading = true;
     private string _searchText = string.Empty;
     private string _filterEstado = string.Empty;
@@ -536,32 +518,32 @@
     
     // Selección
     private bool _selectAll;
-    private HashSet<int> _selectedVendedores = new();
+    private HashSet<int> _selectedZonas = new();
     
     // Modal
     private bool _showModal = false;
     private bool _isEditing = false;
-    private VendedorItem _editVendedor = new();
+    private ZonaItem _editZona = new();
     private string? _modalError;
     
     // Modal eliminar
     private bool _showDeleteModal = false;
-    private VendedorItem? _deleteVendedor;
+    private ZonaItem? _deleteZona;
     
-    private IEnumerable<VendedorItem> FilteredVendedores => _vendedores
-        .Where(v => string.IsNullOrEmpty(_searchText) || 
-                    v.Nombre.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-                    v.Codigo.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
-        .Where(v => string.IsNullOrEmpty(_filterEstado) ||
-                    (_filterEstado == "active" && v.Activo) ||
-                    (_filterEstado == "inactive" && !v.Activo))
-        .OrderBy(v => v.Nombre);
+    private IEnumerable<ZonaItem> FilteredZonas => _zonas
+        .Where(z => string.IsNullOrEmpty(_searchText) || 
+                    z.Descripcion.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                    z.Codigo.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
+        .Where(z => string.IsNullOrEmpty(_filterEstado) ||
+                    (_filterEstado == "active" && z.Activo) ||
+                    (_filterEstado == "inactive" && !z.Activo))
+        .OrderBy(z => z.Descripcion);
     
-    private IEnumerable<VendedorItem> PaginatedVendedores => FilteredVendedores
+    private IEnumerable<ZonaItem> PaginatedZonas => FilteredZonas
         .Skip((_currentPage - 1) * _pageSize)
         .Take(_pageSize);
     
-    private int TotalPages => Math.Max(1, (int)Math.Ceiling(FilteredVendedores.Count() / (double)_pageSize));
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(FilteredZonas.Count() / (double)_pageSize));
     
     protected override async Task OnInitializedAsync()
     {
@@ -575,7 +557,7 @@
         
         try
         {
-            _vendedores = await Commerce.GetVendedoresAbmAsync();
+            _zonas = await Commerce.GetZonasAsync();
         }
         finally
         {
@@ -602,50 +584,48 @@
     {
         if (_selectAll)
         {
-            _selectedVendedores = FilteredVendedores.Select(v => v.Id).ToHashSet();
+            _selectedZonas = FilteredZonas.Select(z => z.Id).ToHashSet();
         }
         else
         {
-            _selectedVendedores.Clear();
+            _selectedZonas.Clear();
         }
     }
     
-    private void ToggleVendedorSelection(int vendedorId)
+    private void ToggleZonaSelection(int zonaId)
     {
-        if (_selectedVendedores.Contains(vendedorId))
-            _selectedVendedores.Remove(vendedorId);
+        if (_selectedZonas.Contains(zonaId))
+            _selectedZonas.Remove(zonaId);
         else
-            _selectedVendedores.Add(vendedorId);
+            _selectedZonas.Add(zonaId);
         
-        _selectAll = FilteredVendedores.All(v => _selectedVendedores.Contains(v.Id));
+        _selectAll = FilteredZonas.All(z => _selectedZonas.Contains(z.Id));
     }
     
     private void OpenAddModal()
     {
         _isEditing = false;
-        var nextCodigo = _vendedores.Any() ? $"VND{(_vendedores.Max(v => v.Id) + 1):D3}" : "VND001";
-        _editVendedor = new VendedorItem
+        var nextCodigo = _zonas.Any() ? $"ZN{(_zonas.Max(z => z.Id) + 1):D3}" : "ZN001";
+        _editZona = new ZonaItem
         {
             Codigo = nextCodigo,
             Activo = true,
-            ComisionPorcentaje = 0,
             FechaAlta = DateTime.Now
         };
         _modalError = null;
         _showModal = true;
     }
     
-    private void OpenEditModal(VendedorItem vendedor)
+    private void OpenEditModal(ZonaItem zona)
     {
         _isEditing = true;
-        _editVendedor = new VendedorItem
+        _editZona = new ZonaItem
         {
-            Id = vendedor.Id,
-            Codigo = vendedor.Codigo,
-            Nombre = vendedor.Nombre,
-            ComisionPorcentaje = vendedor.ComisionPorcentaje,
-            Activo = vendedor.Activo,
-            FechaAlta = vendedor.FechaAlta
+            Id = zona.Id,
+            Codigo = zona.Codigo,
+            Descripcion = zona.Descripcion,
+            Activo = zona.Activo,
+            FechaAlta = zona.FechaAlta
         };
         _modalError = null;
         _showModal = true;
@@ -657,30 +637,30 @@
         _modalError = null;
     }
     
-    private async Task SaveVendedor()
+    private async Task SaveZona()
     {
-        if (string.IsNullOrWhiteSpace(_editVendedor.Codigo))
+        if (string.IsNullOrWhiteSpace(_editZona.Codigo))
         {
             _modalError = "El código es requerido";
             return;
         }
         
-        if (string.IsNullOrWhiteSpace(_editVendedor.Nombre))
+        if (string.IsNullOrWhiteSpace(_editZona.Descripcion))
         {
-            _modalError = "El nombre es requerido";
+            _modalError = "La descripción es requerida";
             return;
         }
         
         // Validar código único
-        if (!_isEditing && _vendedores.Any(v => v.Codigo.Equals(_editVendedor.Codigo, StringComparison.OrdinalIgnoreCase)))
+        if (!_isEditing && _zonas.Any(z => z.Codigo.Equals(_editZona.Codigo, StringComparison.OrdinalIgnoreCase)))
         {
-            _modalError = "Ya existe un vendedor con ese código";
+            _modalError = "Ya existe una zona con ese código";
             return;
         }
         
-        if (_isEditing && _vendedores.Any(v => v.Id != _editVendedor.Id && v.Codigo.Equals(_editVendedor.Codigo, StringComparison.OrdinalIgnoreCase)))
+        if (_isEditing && _zonas.Any(z => z.Id != _editZona.Id && z.Codigo.Equals(_editZona.Codigo, StringComparison.OrdinalIgnoreCase)))
         {
-            _modalError = "Ya existe otro vendedor con ese código";
+            _modalError = "Ya existe otra zona con ese código";
             return;
         }
         
@@ -688,7 +668,7 @@
         {
             var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
             var usuarioId = token != null ? await SessionService.GetUsuarioIdAsync(token) : null;
-            await Commerce.SaveVendedorAsync(_editVendedor, usuarioId);
+            await Commerce.SaveZonaAsync(_editZona, usuarioId);
             
             await LoadDataAsync();
             CloseModal();
@@ -699,28 +679,30 @@
         }
     }
     
-    private void ConfirmDelete(VendedorItem vendedor)
+    private void ConfirmDelete(ZonaItem zona)
     {
-        _deleteVendedor = vendedor;
+        _deleteZona = zona;
         _showDeleteModal = true;
     }
     
-    private async Task DeleteVendedor()
+    private async Task DeleteZona()
     {
-        if (_deleteVendedor == null) return;
+        if (_deleteZona == null) return;
         
         try
         {
             var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
             var usuarioId = token != null ? await SessionService.GetUsuarioIdAsync(token) : null;
-            await Commerce.DeleteVendedorAsync(_deleteVendedor.Id, usuarioId);
+            await Commerce.DeleteZonaAsync(_deleteZona.Id, usuarioId);
             await LoadDataAsync();
             _showDeleteModal = false;
-            _deleteVendedor = null;
+            _deleteZona = null;
         }
         catch (Exception ex)
         {
+            // Manejar error - podría ser por restricción de FK
             _modalError = $"No se puede eliminar: {ex.Message}";
         }
     }
 }
+

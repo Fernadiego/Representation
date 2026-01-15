@@ -8,9 +8,9 @@ public class Venta
     public DateTime Fecha { get; set; } = DateTime.Today;
     public int ClienteId { get; set; }
     public Cliente? Cliente { get; set; }
-    public int VendedorId { get; set; }
+    public int? VendedorId { get; set; }
     public Vendedor? Vendedor { get; set; }
-    public int ComprobanteId { get; set; }
+    public int? ComprobanteId { get; set; }
     public Comprobante? Comprobante { get; set; }
     public string? NumeroComprobante { get; set; }
     

@@ -4,6 +4,7 @@ using BlazorVentas.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlazorVentas.Migrations
 {
     [DbContext(typeof(CommerceDbContext))]
-    partial class CommerceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260112011849_RemoveDescuentoClienteAndAddPorcentaje")]
+    partial class RemoveDescuentoClienteAndAddPorcentaje
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -111,10 +114,6 @@ namespace BlazorVentas.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Descripcion")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
 
                     b.Property<DateTime>("FechaAlta")
                         .HasColumnType("datetime2");
@@ -697,9 +696,6 @@ namespace BlazorVentas.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int?>("DescuentoABMId")
-                        .HasColumnType("int");
-
                     b.Property<string>("DomicilioEntrega")
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
@@ -773,8 +769,6 @@ namespace BlazorVentas.Migrations
                     b.HasIndex("CodigoDescuentoId");
 
                     b.HasIndex("CompanyId");
-
-                    b.HasIndex("DescuentoABMId");
 
                     b.HasIndex("LocalidadId");
 
@@ -1201,11 +1195,6 @@ namespace BlazorVentas.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("BlazorVentas.Data.Models.ABM.DescuentoABM", "DescuentoABM")
-                        .WithMany()
-                        .HasForeignKey("DescuentoABMId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("BlazorVentas.Data.Models.ABM.Localidad", "Localidad")
                         .WithMany()
                         .HasForeignKey("LocalidadId")
@@ -1238,8 +1227,6 @@ namespace BlazorVentas.Migrations
                     b.Navigation("CodigoDescuento");
 
                     b.Navigation("Company");
-
-                    b.Navigation("DescuentoABM");
 
                     b.Navigation("Localidad");
 

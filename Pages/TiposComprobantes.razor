@@ -224,7 +224,8 @@
             <table class="table table-hover tipos-table mb-0">
                 <thead>
                     <tr>
-                        <th style="width: 70%;">Nombre</th>
+                        <th style="width: 20%;">Código</th>
+                        <th style="width: 50%;">Descripción</th>
                         <th style="width: 30%;" class="text-end">Acciones</th>
                     </tr>
                 </thead>
@@ -236,11 +237,12 @@
                             <td>
                                 <div class="tipo-cell">
                                     <div class="tipo-avatar">
-                                        @GetInitials(tipo.Nombre)
+                                        @GetInitials(tipo.Codigo)
                                     </div>
-                                    <div class="tipo-name">@tipo.Nombre</div>
+                                    <div class="tipo-name">@tipo.Codigo</div>
                                 </div>
                             </td>
+                            <td>@tipo.Descripcion</td>
                             <td class="text-end">
                                 <button class="action-btn action-btn-view" @onclick:stopPropagation="true" 
                                         @onclick="() => OpenViewModal(tipo)">
@@ -280,10 +282,50 @@
                         <DataAnnotationsValidator />
                         <ValidationSummary />
                         
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Código <span class="text-danger">*</span></label>
+                                <InputText class="form-control" @bind-Value="_editingTipo.Codigo" />
+                                <ValidationMessage For="@(() => _editingTipo.Codigo)" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Letra</label>
+                                <InputText class="form-control" @bind-Value="_editingTipo.Letra" maxlength="1" />
+                            </div>
+                        </div>
+                        
                         <div class="mb-3">
-                            <label class="form-label">Nombre <span class="text-danger">*</span></label>
-                            <InputText class="form-control" @bind-Value="_editingTipo.Nombre" />
-                            <ValidationMessage For="@(() => _editingTipo.Nombre)" />
+                            <label class="form-label">Descripción <span class="text-danger">*</span></label>
+                            <InputText class="form-control" @bind-Value="_editingTipo.Descripcion" />
+                            <ValidationMessage For="@(() => _editingTipo.Descripcion)" />
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Código AFIP</label>
+                                <InputText class="form-control" @bind-Value="_editingTipo.CodigoAfip" />
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mt-4">
+                                    <InputCheckbox class="form-check-input" @bind-Value="_editingTipo.RequiereCuit" />
+                                    <label class="form-check-label">Requiere CUIT</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <InputCheckbox class="form-check-input" @bind-Value="_editingTipo.RequiereStock" />
+                                    <label class="form-check-label">Requiere Stock</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <InputCheckbox class="form-check-input" @bind-Value="_editingTipo.Activo" />
+                                    <label class="form-check-label">Activo</label>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="modal-footer mt-4">
@@ -308,9 +350,48 @@
                     <button type="button" class="btn-close" @onclick="CloseViewModal"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Código</label>
+                            <div class="form-control-plaintext">@_viewingTipo.Codigo</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Letra</label>
+                            <div class="form-control-plaintext">@(_viewingTipo.Letra ?? "-")</div>
+                        </div>
+                    </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted">Nombre</label>
-                        <div class="form-control-plaintext">@_viewingTipo.Nombre</div>
+                        <label class="form-label text-muted">Descripción</label>
+                        <div class="form-control-plaintext">@_viewingTipo.Descripcion</div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Código AFIP</label>
+                            <div class="form-control-plaintext">@(_viewingTipo.CodigoAfip ?? "-")</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Requiere CUIT</label>
+                            <div class="form-control-plaintext">@(_viewingTipo.RequiereCuit ? "Sí" : "No")</div>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Requiere Stock</label>
+                            <div class="form-control-plaintext">@(_viewingTipo.RequiereStock ? "Sí" : "No")</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Activo</label>
+                            <div class="form-control-plaintext">
+                                @if (_viewingTipo.Activo)
+                                {
+                                    <span class="badge bg-success">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactivo</span>
+                                }
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -335,7 +416,7 @@
                     <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
                 </div>
                 <div class="modal-body">
-                    <p>¿Está seguro que desea eliminar el tipo de comprobante <strong>@_deletingTipo.Nombre</strong>?</p>
+                    <p>¿Está seguro que desea eliminar el tipo de comprobante <strong>@_deletingTipo.Codigo - @_deletingTipo.Descripcion</strong>?</p>
                     <p class="text-danger"><small>Esta acción no se puede deshacer.</small></p>
                 </div>
                 <div class="modal-footer">
@@ -389,20 +470,19 @@
             if (!string.IsNullOrWhiteSpace(_searchText))
             {
                 var searchLower = _searchText.ToLower();
-                query = query.Where(t => t.Nombre.ToLower().Contains(searchLower));
+                query = query.Where(t => 
+                    t.Codigo.ToLower().Contains(searchLower) || 
+                    t.Descripcion.ToLower().Contains(searchLower));
             }
             
-            return query.OrderBy(t => t.Nombre);
+            return query.OrderBy(t => t.Codigo);
         }
     }
     
-    private string GetInitials(string nombre)
+    private string GetInitials(string codigo)
     {
-        if (string.IsNullOrEmpty(nombre)) return "??";
-        var parts = nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length >= 2)
-            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
-        return nombre.Length >= 2 ? nombre.Substring(0, 2).ToUpper() : nombre.ToUpper();
+        if (string.IsNullOrEmpty(codigo)) return "??";
+        return codigo.Length >= 2 ? codigo.Substring(0, 2).ToUpper() : codigo.ToUpper();
     }
     
     private void SelectTipo(int id)
@@ -413,7 +493,7 @@
     
     private void OpenAddModal()
     {
-        _editingTipo = new TipoComprobanteItem();
+        _editingTipo = new TipoComprobanteItem { Activo = true };
         _showAddEditModal = true;
     }
     
@@ -422,7 +502,14 @@
         _editingTipo = new TipoComprobanteItem
         {
             Id = tipo.Id,
-            Nombre = tipo.Nombre
+            Codigo = tipo.Codigo,
+            Descripcion = tipo.Descripcion,
+            Letra = tipo.Letra,
+            CodigoAfip = tipo.CodigoAfip,
+            RequiereCuit = tipo.RequiereCuit,
+            RequiereStock = tipo.RequiereStock,
+            Afectacc = tipo.Afectacc,
+            Activo = tipo.Activo
         };
         _showAddEditModal = true;
     }

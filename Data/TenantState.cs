@@ -1,4 +1,5 @@
 using System;
+using BlazorVentas.Data.Models;
 
 namespace BlazorVentas.Data;
 
