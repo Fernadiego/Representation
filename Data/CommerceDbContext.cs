@@ -41,12 +41,19 @@ public class CommerceDbContext : DbContext
     public DbSet<VentaAMRO> VentasAMRO { get; set; }
     public DbSet<VentaDetalleAMRO> VentasDetalleAMRO { get; set; }
     public DbSet<VentaPercepcionAMRO> VentasPercepcionesAMRO { get; set; }
+    public DbSet<NumeroComprobante> NumerosComprobante { get; set; }
 
     // Usuarios
     public DbSet<Usuario> Usuarios { get; set; }
     
     // Bitácora
     public DbSet<Bitacora> Bitacoras { get; set; }
+    
+    // Cuenta Corriente y Cobranzas
+    public DbSet<MovimientoCuentaCorriente> MovimientosCuentaCorriente { get; set; }
+    public DbSet<Cobranza> Cobranzas { get; set; }
+    public DbSet<CobranzaDetalle> CobranzasDetalle { get; set; }
+    public DbSet<CobranzaComprobante> CobranzasComprobantes { get; set; }
 
     // Entidades principales
     public DbSet<Cliente> Clientes { get; set; }
@@ -350,6 +357,7 @@ public class CommerceDbContext : DbContext
             e.Property(p => p.IvaPercepcion).HasMaxLength(50);
             e.Property(p => p.PercepMinima).HasPrecision(18, 2);
             e.Property(p => p.PorcentPercepcion).HasPrecision(18, 2);
+            e.Property(p => p.Mostrar).HasMaxLength(20);
             e.HasOne(p => p.TipoPercepcion).WithMany(t => t.Percepciones).HasForeignKey(p => p.TipoPercepcionId).OnDelete(DeleteBehavior.SetNull);
         });
 
@@ -447,6 +455,90 @@ public class CommerceDbContext : DbContext
             e.Property(p => p.BaseImponible).HasPrecision(18, 2);
             e.Property(p => p.Monto).HasPrecision(18, 2);
             e.HasOne(p => p.Venta).WithMany(v => v.Percepciones).HasForeignKey(p => p.VentaId).OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        // Configuración de NumeroComprobante (Numeración de comprobantes)
+        modelBuilder.Entity<NumeroComprobante>(e =>
+        {
+            e.ToTable("AMRO_Num_Comprobantes");
+            e.HasKey(n => n.Id);
+            // Índice único por empresa y comprobante
+            e.HasIndex(n => new { n.CompanyId, n.ComprobanteId }).IsUnique();
+            // FK a AMRO_Comprobantes
+            e.HasOne<Comprobante>()
+                .WithMany()
+                .HasForeignKey(n => n.ComprobanteId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        // Configuración de MovimientoCuentaCorriente
+        modelBuilder.Entity<MovimientoCuentaCorriente>(e =>
+        {
+            e.ToTable("AMRO_Movimientos_CC");
+            e.HasKey(m => m.Id);
+            e.Property(m => m.TipoMovimiento).IsRequired().HasMaxLength(20);
+            e.Property(m => m.CodigoComprobante).HasMaxLength(10);
+            e.Property(m => m.NumeroComprobante).HasMaxLength(50);
+            e.Property(m => m.Descripcion).HasMaxLength(500);
+            e.Property(m => m.Debe).HasPrecision(18, 2);
+            e.Property(m => m.Haber).HasPrecision(18, 2);
+            e.Property(m => m.Saldo).HasPrecision(18, 2);
+            e.HasOne(m => m.Cliente).WithMany().HasForeignKey(m => m.ClienteId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(m => new { m.CompanyId, m.ClienteId, m.Fecha });
+        });
+        
+        // Configuración de Cobranza
+        modelBuilder.Entity<Cobranza>(e =>
+        {
+            e.ToTable("AMRO_Cobranzas");
+            e.HasKey(c => c.Id);
+            e.Property(c => c.CodigoComprobante).IsRequired().HasMaxLength(10);
+            e.Property(c => c.NumeroComprobante).HasMaxLength(50);
+            e.Property(c => c.NombreCliente).IsRequired().HasMaxLength(200);
+            e.Property(c => c.NombreSucursal).HasMaxLength(200);
+            e.Property(c => c.NombreCobrador).HasMaxLength(100);
+            e.Property(c => c.Estado).HasMaxLength(20);
+            e.Property(c => c.Observaciones).HasMaxLength(500);
+            e.Property(c => c.TotalEfectivo).HasPrecision(18, 2);
+            e.Property(c => c.TotalCheques).HasPrecision(18, 2);
+            e.Property(c => c.TotalTransferencia).HasPrecision(18, 2);
+            e.Property(c => c.TotalRetencion).HasPrecision(18, 2);
+            e.Property(c => c.TotalOtros).HasPrecision(18, 2);
+            e.Property(c => c.Total).HasPrecision(18, 2);
+            e.HasOne(c => c.Cliente).WithMany().HasForeignKey(c => c.ClienteId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(c => c.Cobrador).WithMany().HasForeignKey(c => c.CobradorId).OnDelete(DeleteBehavior.SetNull);
+            e.HasIndex(c => new { c.CompanyId, c.NumeroComprobante });
+            e.HasIndex(c => new { c.CompanyId, c.ClienteId, c.Fecha });
+        });
+        
+        // Configuración de CobranzaDetalle
+        modelBuilder.Entity<CobranzaDetalle>(e =>
+        {
+            e.ToTable("AMRO_Cobranzas_Detalle");
+            e.HasKey(d => d.Id);
+            e.Property(d => d.TipoPago).IsRequired().HasMaxLength(20);
+            e.Property(d => d.Descripcion).HasMaxLength(200);
+            e.Property(d => d.BancoCheque).HasMaxLength(50);
+            e.Property(d => d.NumeroCheque).HasMaxLength(50);
+            e.Property(d => d.NumeroTransferencia).HasMaxLength(50);
+            e.Property(d => d.BancoOrigen).HasMaxLength(50);
+            e.Property(d => d.TipoRetencion).HasMaxLength(50);
+            e.Property(d => d.NumeroRetencion).HasMaxLength(50);
+            e.Property(d => d.Monto).HasPrecision(18, 2);
+            e.HasOne(d => d.Cobranza).WithMany(c => c.Detalles).HasForeignKey(d => d.CobranzaId).OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        // Configuración de CobranzaComprobante
+        modelBuilder.Entity<CobranzaComprobante>(e =>
+        {
+            e.ToTable("AMRO_Cobranzas_Comprobantes");
+            e.HasKey(cc => cc.Id);
+            e.Property(cc => cc.CodigoComprobante).HasMaxLength(10);
+            e.Property(cc => cc.NumeroComprobante).HasMaxLength(50);
+            e.Property(cc => cc.TotalComprobante).HasPrecision(18, 2);
+            e.Property(cc => cc.MontoAplicado).HasPrecision(18, 2);
+            e.HasOne(cc => cc.Cobranza).WithMany(c => c.ComprobantesAplicados).HasForeignKey(cc => cc.CobranzaId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(cc => cc.Venta).WithMany().HasForeignKey(cc => cc.VentaId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

@@ -1334,4 +1334,241 @@ public class CommerceService
             AverageTicket = avgTicket
         };
     }
+
+    #region Cobranzas
+
+    public async Task<List<Cobranza>> GetCobranzasAsync(int companyId)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+        
+        return await db.Cobranzas
+            .Include(c => c.Detalles)
+            .Include(c => c.ComprobantesAplicados)
+            .Where(c => c.CompanyId == companyId)
+            .OrderByDescending(c => c.Fecha)
+            .ToListAsync();
+    }
+
+    public async Task<List<VentaPendiente>> GetFacturasPendientesClienteAsync(int companyId, int clienteId)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+        
+        // Obtener comprobantes que afectan cuenta corriente con signo positivo (facturas)
+        var comprobantesQueAfectan = await db.Comprobantes
+            .Where(c => c.Afectacc && c.SignoCC > 0)
+            .Select(c => c.Codigo)
+            .ToListAsync();
+
+        // Obtener ventas pendientes
+        var ventas = await db.VentasAMRO
+            .Where(v => v.CompanyId == companyId && 
+                       v.ClienteId == clienteId && 
+                       !v.Anulado &&
+                       comprobantesQueAfectan.Contains(v.CodigoComprobante))
+            .OrderBy(v => v.Fecha)
+            .ToListAsync();
+
+        // Obtener pagos aplicados a cada venta
+        var ventaIds = ventas.Select(v => v.Id).ToList();
+        var pagosAplicados = await db.CobranzasComprobantes
+            .Where(cc => ventaIds.Contains(cc.VentaId))
+            .GroupBy(cc => cc.VentaId)
+            .Select(g => new { VentaId = g.Key, TotalPagado = g.Sum(cc => cc.MontoAplicado) })
+            .ToListAsync();
+
+        var pagosDict = pagosAplicados.ToDictionary(p => p.VentaId, p => p.TotalPagado);
+
+        return ventas.Select(v => new VentaPendiente
+        {
+            Id = v.Id,
+            CodigoComprobante = v.CodigoComprobante,
+            NumeroComprobante = v.NumeroComprobante,
+            Fecha = v.Fecha,
+            FechaVencimiento = v.FechaVencimiento,
+            Total = v.Total,
+            TotalPagado = pagosDict.GetValueOrDefault(v.Id, 0)
+        }).Where(v => v.Total - v.TotalPagado > 0.01m).ToList();
+    }
+
+    public async Task SaveCobranzaAsync(Cobranza cobranza)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+
+        if (cobranza.Id == 0)
+        {
+            // Nueva cobranza - generar número
+            var ultimoNumero = await db.Cobranzas
+                .Where(c => c.CompanyId == cobranza.CompanyId)
+                .MaxAsync(c => (int?)c.Id) ?? 0;
+            cobranza.NumeroComprobante = $"REC-{(ultimoNumero + 1):D6}";
+            cobranza.FechaAlta = DateTime.Now;
+            
+            db.Cobranzas.Add(cobranza);
+            await db.SaveChangesAsync();
+
+            // Crear movimiento en cuenta corriente
+            var ultimoMovimiento = await db.MovimientosCuentaCorriente
+                .Where(m => m.CompanyId == cobranza.CompanyId && m.ClienteId == cobranza.ClienteId)
+                .OrderByDescending(m => m.Id)
+                .FirstOrDefaultAsync();
+
+            var saldoAnterior = ultimoMovimiento?.Saldo ?? 0;
+            var nuevoSaldo = saldoAnterior - cobranza.Total; // Cobranza resta del saldo
+
+            var movimiento = new MovimientoCuentaCorriente
+            {
+                CompanyId = cobranza.CompanyId,
+                ClienteId = cobranza.ClienteId,
+                Fecha = cobranza.Fecha,
+                TipoMovimiento = "COBRANZA",
+                CodigoComprobante = "REC",
+                NumeroComprobante = cobranza.NumeroComprobante,
+                CobranzaId = cobranza.Id,
+                Descripcion = $"Cobranza - {cobranza.NombreCliente}",
+                Debe = 0,
+                Haber = cobranza.Total,
+                Saldo = nuevoSaldo,
+                UsuarioId = cobranza.UsuarioId
+            };
+
+            db.MovimientosCuentaCorriente.Add(movimiento);
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            // Actualizar cobranza existente
+            cobranza.FechaModificacion = DateTime.Now;
+            db.Cobranzas.Update(cobranza);
+            await db.SaveChangesAsync();
+        }
+    }
+
+    public async Task AnularCobranzaAsync(int cobranzaId, int? usuarioId = null)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+
+        var cobranza = await db.Cobranzas.FindAsync(cobranzaId);
+        if (cobranza == null) return;
+
+        cobranza.Estado = "Anulado";
+        cobranza.FechaModificacion = DateTime.Now;
+
+        // Crear movimiento reverso en cuenta corriente
+        var ultimoMovimiento = await db.MovimientosCuentaCorriente
+            .Where(m => m.CompanyId == cobranza.CompanyId && m.ClienteId == cobranza.ClienteId)
+            .OrderByDescending(m => m.Id)
+            .FirstOrDefaultAsync();
+
+        var saldoAnterior = ultimoMovimiento?.Saldo ?? 0;
+        var nuevoSaldo = saldoAnterior + cobranza.Total; // Anulación suma al saldo
+
+        var movimiento = new MovimientoCuentaCorriente
+        {
+            CompanyId = cobranza.CompanyId,
+            ClienteId = cobranza.ClienteId,
+            Fecha = DateTime.Now,
+            TipoMovimiento = "ANULACION",
+            CodigoComprobante = "ANU",
+            NumeroComprobante = cobranza.NumeroComprobante,
+            CobranzaId = cobranza.Id,
+            Descripcion = $"Anulación Cobranza - {cobranza.NombreCliente}",
+            Debe = cobranza.Total,
+            Haber = 0,
+            Saldo = nuevoSaldo,
+            UsuarioId = usuarioId
+        };
+
+        db.MovimientosCuentaCorriente.Add(movimiento);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task<decimal> GetSaldoClienteAsync(int companyId, int clienteId)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+
+        var ultimoMovimiento = await db.MovimientosCuentaCorriente
+            .Where(m => m.CompanyId == companyId && m.ClienteId == clienteId)
+            .OrderByDescending(m => m.Id)
+            .FirstOrDefaultAsync();
+
+        return ultimoMovimiento?.Saldo ?? 0;
+    }
+
+    public async Task<List<MovimientoCuentaCorriente>> GetMovimientosCCClienteAsync(int companyId, int clienteId, DateTime? desde = null, DateTime? hasta = null)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+
+        var query = db.MovimientosCuentaCorriente
+            .Where(m => m.CompanyId == companyId && m.ClienteId == clienteId);
+
+        if (desde.HasValue)
+            query = query.Where(m => m.Fecha >= desde.Value);
+        if (hasta.HasValue)
+            query = query.Where(m => m.Fecha <= hasta.Value);
+
+        return await query.OrderBy(m => m.Fecha).ThenBy(m => m.Id).ToListAsync();
+    }
+
+    /// <summary>
+    /// Genera movimiento en cuenta corriente al guardar una venta (si el comprobante afecta CC)
+    /// </summary>
+    public async Task GenerarMovimientoCCVentaAsync(VentaAMRO venta)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CommerceDbContext>();
+
+        // Verificar si el comprobante afecta cuenta corriente
+        var comprobante = await db.Comprobantes
+            .FirstOrDefaultAsync(c => c.Codigo == venta.CodigoComprobante);
+
+        if (comprobante == null || !comprobante.Afectacc) return;
+
+        var ultimoMovimiento = await db.MovimientosCuentaCorriente
+            .Where(m => m.CompanyId == venta.CompanyId && m.ClienteId == venta.ClienteId)
+            .OrderByDescending(m => m.Id)
+            .FirstOrDefaultAsync();
+
+        var saldoAnterior = ultimoMovimiento?.Saldo ?? 0;
+        decimal debe = 0, haber = 0;
+
+        if (comprobante.SignoCC > 0)
+        {
+            debe = venta.Total;
+            // Factura suma al saldo
+        }
+        else
+        {
+            haber = venta.Total;
+            // NC resta del saldo
+        }
+
+        var nuevoSaldo = saldoAnterior + debe - haber;
+
+        var movimiento = new MovimientoCuentaCorriente
+        {
+            CompanyId = venta.CompanyId,
+            ClienteId = venta.ClienteId,
+            Fecha = venta.Fecha,
+            TipoMovimiento = "VENTA",
+            CodigoComprobante = venta.CodigoComprobante,
+            NumeroComprobante = venta.NumeroComprobante,
+            VentaId = venta.Id,
+            Descripcion = $"{comprobante.Descripcion} - {venta.NombreCliente}",
+            Debe = debe,
+            Haber = haber,
+            Saldo = nuevoSaldo,
+            UsuarioId = venta.UsuarioId
+        };
+
+        db.MovimientosCuentaCorriente.Add(movimiento);
+        await db.SaveChangesAsync();
+    }
+
+    #endregion
 }

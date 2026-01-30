@@ -26,6 +26,7 @@ public class Comprobante
     public bool RequiereCuit { get; set; } = true;
     public bool RequiereStock { get; set; } = true;
     public bool Afectacc { get; set; } = true; // Afecta Cuenta Corriente
+    public int SignoCC { get; set; } = 1; // 1 = Suma al saldo (Facturas), -1 = Resta al saldo (NC, Recibos)
     public bool Activo { get; set; } = true;
     
     public DateTime? FechaAlta { get; set; }

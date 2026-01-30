@@ -13,7 +13,8 @@ public class Percepcion
     public string? IvaPercepcion { get; set; }
     public decimal PercepMinima { get; set; }
     public decimal PorcentPercepcion { get; set; }
-    
+    public string? Mostrar { get; set; }
+
     // Relación con tipo de percepción
     public int? TipoPercepcionId { get; set; }
     public TipoPercepcion? TipoPercepcion { get; set; }

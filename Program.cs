@@ -278,17 +278,23 @@ static async Task SeedDataAsync(CommerceDbContext db, BlazorVentas.Services.Auth
         Console.WriteLine("Sembrando comprobantes...");
         var now = DateTime.Now;
         db.Comprobantes.AddRange(
-            new Comprobante { Codigo = "FAA", Descripcion = "FacturaA", Letra = "A", CodigoAfip = "001", RequiereCuit = true, RequiereStock = true, Afectacc = true, FechaAlta = now },
-            new Comprobante { Codigo = "FAB", Descripcion = "FacturaB", Letra = "B", CodigoAfip = "006", RequiereCuit = true, RequiereStock = true, Afectacc = true, FechaAlta = now },
-            new Comprobante { Codigo = "FAC", Descripcion = "FacturaC", Letra = "C", CodigoAfip = "011", RequiereCuit = false, RequiereStock = false, Afectacc = true, FechaAlta = now },
-            new Comprobante { Codigo = "NCA", Descripcion = "Nota de Crédito A", Letra = "A", CodigoAfip = "003", RequiereCuit = true, RequiereStock = true, Afectacc = true, FechaAlta = now },
-            new Comprobante { Codigo = "NAB", Descripcion = "Nota de Crédito B", Letra = "B", CodigoAfip = "008", RequiereCuit = true, RequiereStock = true, Afectacc = true, FechaAlta = now },
-            new Comprobante { Codigo = "NCC", Descripcion = "Nota de Crédito C", Letra = "C", CodigoAfip = "013", RequiereCuit = false, RequiereStock = true, Afectacc = true, FechaAlta = now },
-            new Comprobante { Codigo = "NDA", Descripcion = "Nota de Débito A", Letra = "A", CodigoAfip = "002", RequiereCuit = true, RequiereStock = false, Afectacc = true, FechaAlta = now },
-            new Comprobante { Codigo = "NDB", Descripcion = "Nota de Débito B", Letra = "B", CodigoAfip = "007", RequiereCuit = true, RequiereStock = false, Afectacc = false, FechaAlta = now },
-            new Comprobante { Codigo = "NDC", Descripcion = "Nota de Débito C", Letra = "C", CodigoAfip = "012", RequiereCuit = false, RequiereStock = false, Afectacc = false, FechaAlta = now },
-            new Comprobante { Codigo = "REMA", Descripcion = "Remito A", Letra = "A", CodigoAfip = null, RequiereCuit = true, RequiereStock = true, Afectacc = false, FechaAlta = now },
-            new Comprobante { Codigo = "REMB", Descripcion = "Remito B", Letra = "B", CodigoAfip = null, RequiereCuit = true, RequiereStock = true, Afectacc = false, FechaAlta = now }
+            // Facturas: Afectan CC, SignoCC = 1 (suman al saldo del cliente)
+            new Comprobante { Codigo = "FAA", Descripcion = "FacturaA", Letra = "A", CodigoAfip = "001", RequiereCuit = true, RequiereStock = true, Afectacc = true, SignoCC = 1, FechaAlta = now },
+            new Comprobante { Codigo = "FAB", Descripcion = "FacturaB", Letra = "B", CodigoAfip = "006", RequiereCuit = true, RequiereStock = true, Afectacc = true, SignoCC = 1, FechaAlta = now },
+            new Comprobante { Codigo = "FAC", Descripcion = "FacturaC", Letra = "C", CodigoAfip = "011", RequiereCuit = false, RequiereStock = false, Afectacc = true, SignoCC = 1, FechaAlta = now },
+            // Notas de Crédito: Afectan CC, SignoCC = -1 (restan del saldo del cliente)
+            new Comprobante { Codigo = "NCA", Descripcion = "Nota de Crédito A", Letra = "A", CodigoAfip = "003", RequiereCuit = true, RequiereStock = true, Afectacc = true, SignoCC = -1, FechaAlta = now },
+            new Comprobante { Codigo = "NCB", Descripcion = "Nota de Crédito B", Letra = "B", CodigoAfip = "008", RequiereCuit = true, RequiereStock = true, Afectacc = true, SignoCC = -1, FechaAlta = now },
+            new Comprobante { Codigo = "NCC", Descripcion = "Nota de Crédito C", Letra = "C", CodigoAfip = "013", RequiereCuit = false, RequiereStock = true, Afectacc = true, SignoCC = -1, FechaAlta = now },
+            // Notas de Débito: Afectan CC, SignoCC = 1 (suman al saldo del cliente)
+            new Comprobante { Codigo = "NDA", Descripcion = "Nota de Débito A", Letra = "A", CodigoAfip = "002", RequiereCuit = true, RequiereStock = false, Afectacc = true, SignoCC = 1, FechaAlta = now },
+            new Comprobante { Codigo = "NDB", Descripcion = "Nota de Débito B", Letra = "B", CodigoAfip = "007", RequiereCuit = true, RequiereStock = false, Afectacc = true, SignoCC = 1, FechaAlta = now },
+            new Comprobante { Codigo = "NDC", Descripcion = "Nota de Débito C", Letra = "C", CodigoAfip = "012", RequiereCuit = false, RequiereStock = false, Afectacc = true, SignoCC = 1, FechaAlta = now },
+            // Remitos: No afectan CC
+            new Comprobante { Codigo = "REMA", Descripcion = "Remito A", Letra = "A", CodigoAfip = null, RequiereCuit = true, RequiereStock = true, Afectacc = false, SignoCC = 0, FechaAlta = now },
+            new Comprobante { Codigo = "REMB", Descripcion = "Remito B", Letra = "B", CodigoAfip = null, RequiereCuit = true, RequiereStock = true, Afectacc = false, SignoCC = 0, FechaAlta = now },
+            // Recibo: Afecta CC, SignoCC = -1 (reduce el saldo del cliente - cobranza)
+            new Comprobante { Codigo = "REC", Descripcion = "Recibo", Letra = "", CodigoAfip = null, RequiereCuit = false, RequiereStock = false, Afectacc = true, SignoCC = -1, FechaAlta = now }
         );
         await db.SaveChangesAsync();
     }
