@@ -63,9 +63,7 @@ public class Customer
     public string Name { get; set; } = string.Empty; // NombreCliente
 
     [StringLength(200)]
-    public string? NombreSucursal { get; set; }
-
-    public int? NumeroProveedor { get; set; }
+    public string NombreSucursal { get; set; } = string.Empty;
 
     [StringLength(300)]
     public string? DomicilioEntrega { get; set; }

@@ -14,7 +14,6 @@ public class Cliente
     public int CodigoParaMostrar { get; set; }
     public string NombreCliente { get; set; } = string.Empty;
     public string NombreSucursal { get; set; } = string.Empty;
-    public int? NumeroProveedor { get; set; }
     public string? DomicilioEntrega { get; set; }
     public string? DomicilioLegal { get; set; }
     public int? LocalidadId { get; set; }

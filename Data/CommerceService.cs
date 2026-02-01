@@ -836,7 +836,6 @@ public class CommerceService
             CodigoParaMostrar = c.CodigoParaMostrar,
             Name = c.NombreCliente,
             NombreSucursal = c.NombreSucursal,
-            NumeroProveedor = c.NumeroProveedor,
             DomicilioEntrega = c.DomicilioEntrega,
             DomicilioLegal = c.DomicilioLegal,
             LocalidadId = c.LocalidadId,
@@ -892,7 +891,6 @@ public class CommerceService
                 CodigoParaMostrar = customer.CodigoParaMostrar,
                 NombreCliente = customer.Name,
                 NombreSucursal = customer.NombreSucursal,
-                NumeroProveedor = customer.NumeroProveedor,
                 DomicilioEntrega = customer.DomicilioEntrega,
                 DomicilioLegal = customer.DomicilioLegal,
                 LocalidadId = customer.LocalidadId,
@@ -932,7 +930,6 @@ public class CommerceService
             existing.CodigoParaMostrar = customer.CodigoParaMostrar;
             existing.NombreCliente = customer.Name;
             existing.NombreSucursal = customer.NombreSucursal;
-            existing.NumeroProveedor = customer.NumeroProveedor;
             existing.DomicilioEntrega = customer.DomicilioEntrega;
             existing.DomicilioLegal = customer.DomicilioLegal;
             existing.LocalidadId = customer.LocalidadId;
